@@ -2,7 +2,8 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { esAnonima, useSesion } from '../lib/sesion';
-import { Marca, PieNewTech } from '../componentes/Marca';
+import { Marca } from '../componentes/Marca';
+import { PieSitio } from '../componentes/Sitio';
 
 type Modo = 'crear' | 'entrar' | 'link' | 'olvide';
 
@@ -194,7 +195,7 @@ export default function Entrar() {
           )}
         </div>
       </div>
-      <PieNewTech />
+      <PieSitio compacto />
     </main>
   );
 }

@@ -10,6 +10,8 @@ import TriviaPanel from './paginas/TriviaPanel';
 import Tarjetas from './paginas/Tarjetas';
 import EventoInvitado from './paginas/EventoInvitado';
 import Pantalla from './paginas/Pantalla';
+import Demo, { DemoPantalla } from './paginas/Demo';
+import { Arrepentimiento, Devoluciones, Privacidad, Terminos } from './paginas/Legal';
 import RutaAnfitrion from './componentes/RutaAnfitrion';
 
 export default function App() {
@@ -32,6 +34,12 @@ export default function App() {
       <Route path="/" element={<Inicio />} />
       <Route path="/entrar" element={<Entrar />} />
       <Route path="/restablecer" element={<Restablecer />} />
+      <Route path="/demo" element={<Demo />} />
+      <Route path="/demo/pantalla" element={<DemoPantalla />} />
+      <Route path="/terminos" element={<Terminos />} />
+      <Route path="/privacidad" element={<Privacidad />} />
+      <Route path="/devoluciones" element={<Devoluciones />} />
+      <Route path="/arrepentimiento" element={<Arrepentimiento />} />
       <Route element={<RutaAnfitrion />}>
         <Route path="/panel" element={<MisEventos />} />
         <Route path="/panel/nuevo" element={<NuevoEvento />} />

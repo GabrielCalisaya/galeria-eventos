@@ -2,13 +2,11 @@
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
 const EMAIL_DESDE = Deno.env.get('EMAIL_DESDE') ?? 'Galería en vivo <onboarding@resend.dev>';
-export const ADMIN_EMAIL = Deno.env.get('ADMIN_EMAIL') ?? '';
-const WHATSAPP_NUMERO = (Deno.env.get('WHATSAPP_NUMERO') ?? '').replace(/\D/g, '');
+export const ADMIN_EMAIL = Deno.env.get('ADMIN_EMAIL') || 'contacto@newtech.net.ar';
+const WHATSAPP_NUMERO = (Deno.env.get('WHATSAPP_NUMERO') || '5493885187080').replace(/\D/g, '');
 
 export function linkWhatsapp(texto: string): string {
-  return WHATSAPP_NUMERO
-    ? `https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent(texto)}`
-    : 'https://wa.link/cddbf1';
+  return `https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent(texto)}`;
 }
 
 const escapar = (s: string) =>
@@ -45,7 +43,7 @@ export function plantilla(titulo: string, cuerpo: string, boton?: { texto: strin
     <div style="font-size:15px;line-height:1.6">${cuerpo}</div>
     <div style="margin-top:20px">${boton ? btn(boton, true) : ''}${boton2 ? btn(boton2, false) : ''}</div>
   </div>
-  <p style="text-align:center;font-size:12px;color:#73656a;margin-top:16px">NewTech · newtech.net.ar</p>
+  <p style="text-align:center;font-size:12px;color:#73656a;margin-top:16px">New Tech · CUIT 20-40927991-1 · San Salvador de Jujuy<br>WhatsApp +54 9 388 518-7080 · contacto@newtech.net.ar</p>
 </body></html>`;
 }
 

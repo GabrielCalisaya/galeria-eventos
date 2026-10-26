@@ -1,8 +1,8 @@
-const NUMERO = ((import.meta.env.VITE_WHATSAPP_NUMERO as string | undefined) ?? '').replace(/\D/g, '');
+import { linkWhatsappNegocio, NEGOCIO } from './negocio';
 
-export const MUESTRAS_INVITACIONES = 'https://invitaciones.newtech.net.ar/#muestras';
+export const MUESTRAS_INVITACIONES = `${NEGOCIO.invitaciones}/#muestras`;
 
-/** Link de WhatsApp de NewTech, con un mensaje ya escrito si hay número configurado. */
+/** Link de WhatsApp de New Tech con un mensaje ya escrito. */
 export function linkWhatsapp(texto: string): string {
-  return NUMERO ? `https://wa.me/${NUMERO}?text=${encodeURIComponent(texto)}` : 'https://wa.link/cddbf1';
+  return linkWhatsappNegocio(texto);
 }

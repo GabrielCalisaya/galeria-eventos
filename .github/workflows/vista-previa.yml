@@ -1,0 +1,49 @@
+name: Vista previa
+
+# Compila la rama de trabajo, saca capturas de las páginas públicas en celular y compu,
+# y las guarda en la rama "vista-previa" para revisarlas antes de publicar.
+
+on:
+  push:
+    branches: [nuevas-funciones]
+    paths-ignore: ['supabase/**']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  capturas:
+    runs-on: ubuntu-latest
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      VITE_R2_PUBLIC_URL: ${{ secrets.VITE_R2_PUBLIC_URL }}
+      VITE_WHATSAPP_NUMERO: ${{ secrets.WHATSAPP_NUMERO }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Compilar
+        run: npm install --no-audit --no-fund && npm run build
+
+      - name: Instalar navegador
+        run: npx --yes playwright@1.48.2 install --with-deps chromium
+
+      - name: Sacar capturas
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.48.2
+          node scripts/capturas.mjs
+
+      - name: Guardar capturas en la rama vista-previa
+        run: |
+          cd capturas
+          git init -q
+          git config user.name "Gabriel Calisaya"
+          git config user.email "gaabiiomaar98@gmail.com"
+          git add -A
+          git commit -q -m "Capturas de ${GITHUB_SHA::7}"
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" HEAD:vista-previa

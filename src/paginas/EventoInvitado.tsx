@@ -10,7 +10,7 @@ import { FRASE_TIPO, momentoDe, type EventoPublico } from '../lib/tipos';
 import Galeria from '../componentes/Galeria';
 import ProgresoSubida from '../componentes/ProgresoSubida';
 import TriviaInvitado from '../componentes/TriviaInvitado';
-import { PieNewTech } from '../componentes/Marca';
+import { PieSitio } from '../componentes/Sitio';
 
 type Estado =
   | { tipo: 'cargando' }
@@ -85,7 +85,7 @@ export default function EventoInvitado() {
   return (
     <main className={`invitado ${momentoDe(ev.estilo)}`} style={tema}>
       {ev.invitado_id ? <GaleriaInvitado evento={ev} /> : <PedirNombre slug={slug} evento={ev} onListo={cargar} />}
-      <PieNewTech oscuro={momentoDe(ev.estilo) === 'noche'} />
+      <PieSitio compacto oscuro={momentoDe(ev.estilo) === 'noche'} />
     </main>
   );
 }

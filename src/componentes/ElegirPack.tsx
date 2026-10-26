@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { formatearPrecio, INCLUYE, irAPagar, usePrecios } from '../lib/pagos';
 import type { Evento } from '../lib/tipos';
 import { useDialogos } from './Dialogos';
+import { Link } from 'react-router-dom';
 import { MUESTRAS_INVITACIONES } from '../lib/contacto';
+import { linkWhatsappNegocio } from '../lib/negocio';
 
 type Props = {
   evento: Evento;
@@ -115,6 +117,17 @@ export default function ElegirPack({ evento, modo, estadoRetorno }: Props) {
         </button>
       </div>
       <p className="ayuda">Te lleva a Mercado Pago para pagar de forma segura y después volvés acá.</p>
+      <ul className="confianza-pago">
+        <li>🔒 Pago protegido por Mercado Pago</li>
+        <li>
+          <a href={linkWhatsappNegocio('Hola, tengo una consulta antes de pagar mi galería.')} target="_blank" rel="noreferrer">
+            Soporte por WhatsApp 24/7
+          </a>
+        </li>
+        <li>
+          <Link to="/devoluciones">10 días para arrepentirte</Link>
+        </li>
+      </ul>
     </section>
   );
 }

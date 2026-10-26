@@ -16,3 +16,7 @@ verify_jwt = false
 # Mercado Pago llama sin sesión: la función verifica la firma y consulta el pago a Mercado Pago.
 [functions.mp-webhook]
 verify_jwt = false
+
+# Botón de arrepentimiento: por ley no puede exigir cuenta ni sesión.
+[functions.arrepentimiento]
+verify_jwt = false

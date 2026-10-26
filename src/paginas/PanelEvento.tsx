@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { PieSitio } from '../componentes/Sitio';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import QRCode from 'qrcode';
 import { supabase } from '../lib/supabase';
@@ -375,6 +376,7 @@ export default function PanelEvento() {
           </section>
         </div>
       )}
+      <PieSitio compacto />
     </main>
   );
 }

@@ -9,9 +9,11 @@ type Props = {
   /** Si viene, la galería está en modo selección: tocar una foto la marca en vez de abrirla. */
   seleccion?: Set<string>;
   onAlternar?: (id: string) => void;
+  /** Cómo convertir la clave de la foto en dirección (por defecto, el almacenamiento R2). */
+  urlDe?: (key: string) => string;
 };
 
-export default function Galeria({ fotos, acciones, seleccion, onAlternar }: Props) {
+export default function Galeria({ fotos, acciones, seleccion, onAlternar, urlDe = urlPublica }: Props) {
   const [abierta, setAbierta] = useState<number | null>(null);
   const seleccionando = Boolean(seleccion && onAlternar);
 
@@ -30,7 +32,7 @@ export default function Galeria({ fotos, acciones, seleccion, onAlternar }: Prop
                 aria-label={seleccionando ? `Seleccionar foto de ${f.autor_nombre}` : `Foto de ${f.autor_nombre}`}
                 aria-pressed={seleccionando ? marcada : undefined}
               >
-                <img src={urlPublica(f.key_thumb)} alt="" loading="lazy" decoding="async" />
+                <img src={urlDe(f.key_thumb)} alt="" loading="lazy" decoding="async" />
                 {seleccionando && <span className="marca-seleccion" aria-hidden="true" />}
               </button>
               {!seleccionando && acciones?.(f)}
@@ -39,7 +41,7 @@ export default function Galeria({ fotos, acciones, seleccion, onAlternar }: Prop
         })}
       </ul>
       {abierta !== null && fotos[abierta] && (
-        <Visor fotos={fotos} indice={abierta} onCambiar={setAbierta} onCerrar={() => setAbierta(null)} />
+        <Visor fotos={fotos} indice={abierta} onCambiar={setAbierta} onCerrar={() => setAbierta(null)} urlDe={urlDe} />
       )}
     </>
   );
@@ -50,11 +52,13 @@ function Visor({
   indice,
   onCambiar,
   onCerrar,
+  urlDe,
 }: {
   fotos: Media[];
   indice: number;
   onCambiar: (i: number) => void;
   onCerrar: () => void;
+  urlDe: (key: string) => string;
 }) {
   const foto = fotos[indice];
   const anterior = () => indice > 0 && onCambiar(indice - 1);
@@ -81,7 +85,7 @@ function Visor({
     <div className="visor" role="dialog" aria-modal="true" aria-label="Foto ampliada">
       <img
         className="visor-foto"
-        src={urlPublica(foto.key_original)}
+        src={urlDe(foto.key_original)}
         alt={`Foto de ${foto.autor_nombre}`}
         onTouchStart={(e) => setInicioX(e.touches[0].clientX)}
         onTouchEnd={(e) => {
@@ -94,7 +98,7 @@ function Visor({
       />
       <div className="visor-barra">
         <span className="visor-autor">{foto.autor_nombre}</span>
-        <a className="visor-boton" href={urlPublica(foto.key_original)} download target="_blank" rel="noreferrer">
+        <a className="visor-boton" href={urlDe(foto.key_original)} download target="_blank" rel="noreferrer">
           Descargar
         </a>
         <button type="button" className="visor-boton" onClick={onCerrar}>

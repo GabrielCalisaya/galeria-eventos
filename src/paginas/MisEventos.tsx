@@ -1,4 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react';
+import { PieSitio } from '../componentes/Sitio';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { NOMBRES_TIPO, type Evento } from '../lib/tipos';
@@ -67,6 +68,7 @@ export default function MisEventos() {
           </ul>
         )}
       </div>
+      <PieSitio compacto />
     </main>
   );
 }

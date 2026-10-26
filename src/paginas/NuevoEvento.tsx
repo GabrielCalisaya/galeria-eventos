@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { PieSitio } from '../componentes/Sitio';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useSesion } from '../lib/sesion';
@@ -145,6 +146,7 @@ export default function NuevoEvento() {
           </button>
         </form>
       </div>
+      <PieSitio compacto />
     </main>
   );
 }

@@ -278,5 +278,15 @@ select pruebas.como('00000000-0000-0000-0000-00000000000a', false);
 set role authenticated;
 select pruebas.debe_fallar(format('select public.trivia_control(%L, %L)', :'ev_id', 'iniciar'), 'el pack Básico no incluye la trivia');
 
+-- 17. Arrepentimientos: solo los maneja el servidor.
+reset role;
+insert into public.arrepentimientos (codigo, nombre, email) values ('ARR-PRUEBA', 'Ana', 'ana@ejemplo.com');
+set role anon;
+select pruebas.debe_rechazar('select count(*) from public.arrepentimientos', 'anon no lee arrepentimientos');
+reset role;
+select pruebas.como('00000000-0000-0000-0000-00000000000a', false);
+set role authenticated;
+select pruebas.debe_rechazar('select count(*) from public.arrepentimientos', 'un anfitrión no lee arrepentimientos ajenos');
+
 reset role;
 \echo 'Todas las pruebas de reglas pasaron.'
