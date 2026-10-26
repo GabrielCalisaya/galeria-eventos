@@ -26,7 +26,9 @@ grant execute on all functions in schema auth to anon, authenticated, service_ro
 
 create publication supabase_realtime;
 
--- Supabase da estos permisos de tabla por defecto; RLS es lo que restringe.
-alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
-alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
-grant usage on schema public to anon, authenticated, service_role;
+-- Simula "Automatically expose new tables" desactivado: las tablas nuevas
+-- no reciben permisos automáticos, así que las migraciones tienen que darlos.
+revoke all on schema public from public;
+
+-- service_role en Supabase puede usar las secuencias y saltear RLS.
+grant service_role to postgres;

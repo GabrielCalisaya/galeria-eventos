@@ -8,7 +8,7 @@ insert into auth.users (id, email, is_anonymous) values
   ('00000000-0000-0000-0000-00000000000d', null, true);   -- extraño sin unirse
 
 create schema pruebas;
-grant usage on schema pruebas to authenticated;
+grant usage on schema pruebas to authenticated, anon;
 
 create or replace function pruebas.como(p_user text, p_anon boolean) returns void language plpgsql as $$
 begin
@@ -30,7 +30,7 @@ exception when insufficient_privilege then
   raise notice 'ok: %', p_msg;
 end $$;
 
-grant execute on all functions in schema pruebas to authenticated;
+grant execute on all functions in schema pruebas to authenticated, anon;
 
 -- 1. El anfitrión crea un evento y queda como miembro.
 select pruebas.como('00000000-0000-0000-0000-00000000000a', false);
@@ -64,7 +64,7 @@ select pruebas.como('00000000-0000-0000-0000-00000000000c', true);
 select public.unirse_evento('pruebaSlug123', 'Tomás') as guest_id \gset g2_
 
 -- 5. Fotos creadas por la función (service role): una lista, una pendiente, una oculta.
-reset role;
+set role service_role;
 insert into public.media (id, event_id, guest_id, user_id, autor_nombre, key_original, key_thumb, estado, oculta) values
   ('10000000-0000-0000-0000-000000000001', :'ev_id', :'g_guest_id', '00000000-0000-0000-0000-00000000000b', 'Lucía', 'k1', 't1', 'lista', false),
   ('10000000-0000-0000-0000-000000000002', :'ev_id', :'g_guest_id', '00000000-0000-0000-0000-00000000000b', 'Lucía', 'k2', 't2', 'pendiente', false),
@@ -101,6 +101,15 @@ select pruebas.afirmar((select count(*) = 3 from public.media), 'el anfitrión v
 update public.media set oculta = false where id = '10000000-0000-0000-0000-000000000003';
 select pruebas.afirmar((select not oculta from public.media where id = '10000000-0000-0000-0000-000000000003'), 'el anfitrión puede mostrar una foto oculta');
 select pruebas.afirmar((select count(*) = 2 from public.guests), 'el anfitrión ve a sus invitados');
+select pruebas.debe_rechazar(
+  'update public.media set key_original = ''otra'' where id = ''10000000-0000-0000-0000-000000000001''',
+  'el anfitrión solo puede cambiar la columna oculta');
+
+-- 11. Sin sesión (rol anon) no se accede a nada.
+reset role;
+set role anon;
+select pruebas.debe_rechazar('select count(*) from public.media', 'anon no lee fotos');
+select pruebas.debe_rechazar('select count(*) from public.events', 'anon no lee eventos');
 
 reset role;
 \echo 'Todas las pruebas de reglas pasaron.'

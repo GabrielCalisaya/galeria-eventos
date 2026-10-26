@@ -21,7 +21,13 @@ Seguí los pasos en orden. Ninguna clave se escribe en el código: todas van com
 
 ### 1. Supabase
 
-1. Creá un proyecto en [supabase.com](https://supabase.com). Guardá la **contraseña de la base de datos** que te pide.
+1. Creá un proyecto en [supabase.com](https://supabase.com) con esta configuración:
+   - **GitHub:** sin conectar (el despliegue lo hace este repo).
+   - **Database password:** generala y guardala; no se puede volver a ver.
+   - **Region:** South America (São Paulo).
+   - **Enable Data API:** activado.
+   - **Automatically expose new tables:** desactivado. Los permisos los da la migración `20261026000000_permisos.sql`.
+   - **Enable automatic RLS:** activado.
 2. En **Authentication → Sign In / Providers**, activá **Allow anonymous sign-ins** (así entran los invitados sin cuenta). El login por email ya viene activo.
 3. En **Authentication → URL Configuration**:
    - **Site URL:** `https://fotos.tudominio.com` (tu subdominio).
