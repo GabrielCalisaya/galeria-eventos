@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { linkPantalla } from '../lib/formato';
 import {
   LETRAS,
-  PREGUNTAS_SUGERIDAS,
+  preguntasSugeridas,
   useCuentaRegresiva,
   useTrivia,
   type PreguntaTrivia,
@@ -13,14 +13,17 @@ import type { Evento } from '../lib/tipos';
 import EncabezadoPanel from '../componentes/EncabezadoPanel';
 
 type Borrador = { id?: string; texto: string; opciones: string[]; correcta: number };
-const VACIA: Borrador = { texto: '', opciones: ['', ''], correcta: 0 };
+// correcta = -1 hasta que el anfitrión marque cuál es.
+const VACIA: Borrador = { texto: '', opciones: ['', ''], correcta: -1 };
 
 export default function TriviaPanel() {
   const { id } = useParams();
   const [evento, setEvento] = useState<Evento | null>(null);
   const [preguntas, setPreguntas] = useState<PreguntaTrivia[]>([]);
   const [editando, setEditando] = useState<Borrador | null>(null);
+  const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
+  const [verIdeas, setVerIdeas] = useState(false);
 
   const cargar = useCallback(async () => {
     if (!id) return;
@@ -40,20 +43,29 @@ export default function TriviaPanel() {
   }, [id, cargar]);
 
   async function guardar(b: Borrador) {
-    if (!id) return;
+    if (!id || guardando) return;
+    setGuardando(true);
     setError('');
     const opciones = b.opciones.map((o) => o.trim()).filter(Boolean);
-    const correcta = Math.min(b.correcta, opciones.length - 1);
+    const correcta = Math.min(Math.max(b.correcta, 0), opciones.length - 1);
     const fila = { texto: b.texto.trim(), opciones, correcta };
     const { error } = b.id
       ? await supabase.from('trivia_preguntas').update(fila).eq('id', b.id)
       : await supabase.from('trivia_preguntas').insert({ ...fila, event_id: id, orden: (preguntas.at(-1)?.orden ?? 0) + 1 });
+    setGuardando(false);
     if (error) {
       setError('No se pudo guardar la pregunta. Revisá que tenga al menos 2 opciones.');
       return;
     }
     setEditando(null);
     await cargar();
+  }
+
+  function usarIdea(texto: string, opciones: string[]) {
+    setError('');
+    setEditando({ texto, opciones: [...opciones], correcta: -1 });
+    setVerIdeas(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   async function borrar(p: PreguntaTrivia) {
@@ -72,22 +84,6 @@ export default function TriviaPanel() {
     nuevas[i + dir] = esta;
     setPreguntas(nuevas);
     await Promise.all(nuevas.map((p, n) => supabase.from('trivia_preguntas').update({ orden: n + 1 }).eq('id', p.id)));
-  }
-
-  async function agregarSugeridas() {
-    if (!id) return;
-    const base = (preguntas.at(-1)?.orden ?? 0) + 1;
-    const existentes = new Set(preguntas.map((p) => p.texto));
-    const filas = PREGUNTAS_SUGERIDAS.filter((s) => !existentes.has(s.texto)).map((s, i) => ({
-      event_id: id,
-      orden: base + i,
-      texto: s.texto,
-      opciones: s.opciones,
-      correcta: 0,
-    }));
-    if (filas.length === 0) return;
-    await supabase.from('trivia_preguntas').insert(filas);
-    await cargar();
   }
 
   if (!evento) {
@@ -131,22 +127,32 @@ export default function TriviaPanel() {
           {preguntas.length === 0 && !editando && (
             <div className="vacio tarjeta">
               <p>Todavía no hay preguntas.</p>
-              <p>Empezá con las sugeridas y editalas con los datos reales de la pareja.</p>
-              <button type="button" className="boton" onClick={agregarSugeridas}>
-                Agregar preguntas sugeridas
-              </button>
+              <p>Escribí la tuya o elegí una de las ideas de abajo y marcá la respuesta correcta.</p>
             </div>
           )}
 
           {editando && !editando.id && (
-            <EditorPregunta inicial={editando} onGuardar={guardar} onCancelar={() => setEditando(null)} error={error} />
+            <EditorPregunta
+              key={editando.texto || 'nueva'}
+              inicial={editando}
+              onGuardar={guardar}
+              onCancelar={() => setEditando(null)}
+              error={error}
+              guardando={guardando}
+            />
           )}
 
           <ol className="lista-preguntas">
             {preguntas.map((p, i) =>
               editando?.id === p.id ? (
                 <li key={p.id}>
-                  <EditorPregunta inicial={editando} onGuardar={guardar} onCancelar={() => setEditando(null)} error={error} />
+                  <EditorPregunta
+                    inicial={editando}
+                    onGuardar={guardar}
+                    onCancelar={() => setEditando(null)}
+                    error={error}
+                    guardando={guardando}
+                  />
                 </li>
               ) : (
                 <li key={p.id} className="tarjeta pregunta-item">
@@ -186,11 +192,13 @@ export default function TriviaPanel() {
               ),
             )}
           </ol>
-          {preguntas.length > 0 && (
-            <button type="button" className="boton-texto" onClick={agregarSugeridas}>
-              Sumar las preguntas sugeridas que falten
-            </button>
-          )}
+          <IdeasDePreguntas
+            tipo={evento.tipo}
+            usadas={new Set(preguntas.map((p) => p.texto))}
+            abiertas={verIdeas || preguntas.length === 0}
+            onAlternar={() => setVerIdeas((v) => !v)}
+            onUsar={usarIdea}
+          />
         </section>
       </div>
     </main>
@@ -202,18 +210,20 @@ function EditorPregunta({
   onGuardar,
   onCancelar,
   error,
+  guardando,
 }: {
   inicial: Borrador;
   onGuardar: (b: Borrador) => void;
   onCancelar: () => void;
   error: string;
+  guardando: boolean;
 }) {
   const [b, setB] = useState<Borrador>(inicial);
   const valida = b.texto.trim() && b.opciones.filter((o) => o.trim()).length >= 2 && b.opciones[b.correcta]?.trim();
 
   function enviar(e: FormEvent) {
     e.preventDefault();
-    if (valida) onGuardar(b);
+    if (valida && !guardando) onGuardar(b);
   }
 
   return (
@@ -230,7 +240,7 @@ function EditorPregunta({
         />
       </label>
       <fieldset className="campo">
-        <legend>Opciones · marcá la correcta</legend>
+        <legend>Opciones · tocá la letra de la respuesta correcta</legend>
         {b.opciones.map((o, i) => (
           <div className="opcion-fila" key={i}>
             <label className="opcion-correcta" title="Respuesta correcta">
@@ -268,10 +278,11 @@ function EditorPregunta({
           </button>
         )}
       </fieldset>
+      {b.correcta < 0 && <p className="ayuda">Falta marcar cuál es la respuesta correcta.</p>}
       {error && <p className="error">{error}</p>}
       <div className="acciones">
-        <button className="boton boton-primario" disabled={!valida}>
-          Guardar pregunta
+        <button className="boton boton-primario" disabled={!valida || guardando}>
+          {guardando ? 'Guardando…' : 'Guardar pregunta'}
         </button>
         <button type="button" className="boton" onClick={onCancelar}>
           Cancelar
@@ -380,6 +391,46 @@ function ControlEnVivo({ eventId, cantidad }: { eventId: string; cantidad: numbe
       </div>
       {cantidad === 0 && fase === 'espera' && <p className="ayuda">Agregá al menos una pregunta para empezar.</p>}
       {error && <p className="error">{error}</p>}
+    </section>
+  );
+}
+
+function IdeasDePreguntas({
+  tipo,
+  usadas,
+  abiertas,
+  onAlternar,
+  onUsar,
+}: {
+  tipo: string;
+  usadas: Set<string>;
+  abiertas: boolean;
+  onAlternar: () => void;
+  onUsar: (texto: string, opciones: string[]) => void;
+}) {
+  const ideas = preguntasSugeridas(tipo).filter((s) => !usadas.has(s.texto));
+  if (ideas.length === 0) return null;
+  return (
+    <section className="ideas">
+      <button type="button" className="ideas-titulo" onClick={onAlternar} aria-expanded={abiertas}>
+        <span>✦ Ideas de preguntas ({ideas.length})</span>
+        <span aria-hidden="true">{abiertas ? '−' : '+'}</span>
+      </button>
+      {abiertas && (
+        <ul className="ideas-lista">
+          {ideas.map((s) => (
+            <li key={s.texto} className="tarjeta idea">
+              <div>
+                <p className="idea-texto">{s.texto}</p>
+                <p className="idea-opciones">{s.opciones.join(' · ')}</p>
+              </div>
+              <button type="button" className="boton" onClick={() => onUsar(s.texto, s.opciones)}>
+                Usar
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

@@ -395,7 +395,7 @@ a {
   color: var(--tinta);
 }
 
-.campo input,
+.campo input:not([type='radio']):not([type='checkbox']),
 .campo select,
 .campo textarea,
 .opcion-fila input:not([type='radio']) {
@@ -999,6 +999,59 @@ a {
   font-size: 1.5rem;
   font-weight: 600;
   color: var(--tinta-fuerte);
+}
+
+.ideas {
+  margin-top: 28px;
+}
+
+.ideas-titulo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 14px 4px;
+  border: 0;
+  border-top: 1px solid var(--linea-fuerte);
+  background: none;
+  color: var(--ciruela);
+  font-size: 1rem;
+  font-weight: 800;
+  text-align: left;
+}
+
+.ideas-lista {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+}
+
+.idea {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.idea-texto {
+  margin: 0 0 4px !important;
+  font-weight: 700;
+}
+
+.idea-opciones {
+  margin: 0 !important;
+  color: var(--suave);
+  font-size: 0.85rem;
+}
+
+.idea .boton {
+  flex: none;
+  min-height: 40px;
+  padding: 0 16px;
 }
 
 .lista-preguntas {

@@ -108,13 +108,46 @@ export function useTriviaPantalla(token: string | undefined) {
   return estado;
 }
 
-export const PREGUNTAS_SUGERIDAS: { texto: string; opciones: string[] }[] = [
-  { texto: '¿Quién dijo "te amo" primero?', opciones: ['Ella', 'Él'] },
-  { texto: '¿Quién tarda más en arreglarse?', opciones: ['Ella', 'Él'] },
-  { texto: '¿Quién cocina en casa?', opciones: ['Ella', 'Él', 'Los dos', 'Delivery'] },
-  { texto: '¿Quién se duerme primero viendo una película?', opciones: ['Ella', 'Él'] },
+export type Sugerida = { texto: string; opciones: string[] };
+
+/** Ideas para la pareja (casamientos y aniversarios). El anfitrión elige la correcta al usarlas. */
+const SUGERIDAS_PAREJA: Sugerida[] = [
   { texto: '¿Dónde se conocieron?', opciones: ['En la facultad', 'En el trabajo', 'Por amigos', 'En una app'] },
+  { texto: '¿Cómo fue la primera cita?', opciones: ['Un café', 'Una cena', 'El cine', 'Una fiesta'] },
+  { texto: '¿Cuánto tardó el primer beso?', opciones: ['Esa misma noche', 'Una semana', 'Un mes', 'Más de un mes'] },
+  { texto: '¿Quién dijo "te amo" primero?', opciones: ['Ella', 'Él'] },
+  { texto: '¿Dónde fue la propuesta?', opciones: ['En casa', 'En un viaje', 'En un restaurante', 'Con amigos y sorpresa'] },
   { texto: '¿Cuántos años llevan juntos?', opciones: ['Menos de 3', 'De 3 a 5', 'De 6 a 9', '10 o más'] },
-  { texto: '¿Quién pidió casamiento?', opciones: ['Ella', 'Él'] },
-  { texto: '¿Quién es más ordenado?', opciones: ['Ella', 'Él'] },
+  { texto: '¿Cuál fue su primer viaje juntos?', opciones: ['A la playa', 'A la montaña', 'Al exterior', 'Una escapada cerca'] },
+  { texto: '¿Qué piden siempre de delivery?', opciones: ['Pizza', 'Sushi', 'Hamburguesas', 'Empanadas'] },
+  { texto: '¿Cuál es su plan ideal de domingo?', opciones: ['Mate y sillón', 'Salir a pasear', 'Asado con amigos', 'Dormir hasta tarde'] },
+  { texto: '¿Quién cocina en casa?', opciones: ['Ella', 'Él', 'Los dos', 'El delivery'] },
+  { texto: '¿Quién tarda más en arreglarse?', opciones: ['Ella', 'Él', 'Empate'] },
+  { texto: '¿Quién se duerme primero viendo una película?', opciones: ['Ella', 'Él', 'Los dos a la vez'] },
+  { texto: '¿Quién elige la música en el auto?', opciones: ['Ella', 'Él', 'Se pelean por eso'] },
+  { texto: '¿Quién pide perdón primero después de una discusión?', opciones: ['Ella', 'Él', 'Ninguno, se ríen y listo'] },
+  { texto: '¿Cuántas mascotas tienen?', opciones: ['Ninguna', 'Una', 'Dos', 'Más de dos'] },
+  { texto: '¿Qué les gusta hacer juntos?', opciones: ['Viajar', 'Cocinar', 'Ver series', 'Hacer deporte'] },
+  { texto: '¿Cuál es el destino soñado de luna de miel?', opciones: ['El Caribe', 'Europa', 'Brasil', 'Recorrer Argentina'] },
+  { texto: '¿Qué es lo primero que se notaron el uno del otro?', opciones: ['La sonrisa', 'Los ojos', 'El humor', 'La forma de bailar'] },
 ];
+
+/** Ideas para cumpleaños de 15 y cumpleaños (sobre quien cumple). */
+const SUGERIDAS_CUMPLE: Sugerida[] = [
+  { texto: '¿Cuál es su comida favorita?', opciones: ['Pizza', 'Milanesa con papas', 'Sushi', 'Pastas'] },
+  { texto: '¿Qué le gusta hacer en su tiempo libre?', opciones: ['Bailar', 'Hacer deporte', 'Dibujar', 'Jugar videojuegos'] },
+  { texto: '¿Cuál es su color favorito?', opciones: ['Rosa', 'Negro', 'Azul', 'Lila'] },
+  { texto: '¿Qué quiere ser cuando sea grande?', opciones: ['Médica', 'Abogada', 'Artista', 'Todavía no sabe'] },
+  { texto: '¿Cuál es su materia favorita?', opciones: ['Arte', 'Educación física', 'Matemática', 'Ninguna'] },
+  { texto: '¿Qué música escucha más?', opciones: ['Pop', 'Reggaetón', 'Cuarteto', 'Rock'] },
+  { texto: '¿Cuál es su destino soñado?', opciones: ['Disney', 'París', 'El Caribe', 'Japón'] },
+  { texto: '¿Tiene mascota?', opciones: ['Un perro', 'Un gato', 'Otra mascota', 'Ninguna, todavía'] },
+  { texto: '¿Qué no puede faltar en su mochila?', opciones: ['El celular', 'Los auriculares', 'Un maquillaje', 'Snacks'] },
+  { texto: '¿Cuál es su serie o película favorita?', opciones: ['Una de Disney', 'Una de terror', 'Una comedia', 'Un anime'] },
+  { texto: '¿A qué hora se levanta los fines de semana?', opciones: ['Antes de las 9', 'A media mañana', 'Al mediodía', 'A la tarde'] },
+  { texto: '¿Con quién comparte más secretos?', opciones: ['Con su mamá', 'Con su mejor amiga', 'Con su hermana o hermano', 'Con su diario'] },
+];
+
+export function preguntasSugeridas(tipo: string): Sugerida[] {
+  return tipo === 'quince' || tipo === 'cumpleanos' ? SUGERIDAS_CUMPLE : SUGERIDAS_PAREJA;
+}
