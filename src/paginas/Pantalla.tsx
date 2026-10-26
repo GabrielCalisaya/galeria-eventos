@@ -5,13 +5,12 @@ import { supabase, urlPublica } from '../lib/supabase';
 import { colorValido } from '../lib/colores';
 import { formatearFecha, linkInvitados, separarNombres } from '../lib/formato';
 import { useTriviaPantalla } from '../lib/trivia';
-import type { EstiloEvento } from '../lib/tipos';
+import { momentoDe, segundosDe, type EstiloEvento } from '../lib/tipos';
 import TriviaPantalla from '../componentes/TriviaPantalla';
 
 type EventoPantalla = { id: string; slug: string; titulo: string; fecha: string | null; estilo: EstiloEvento };
 type FotoPantalla = { id: string; key_original: string; key_thumb: string; autor_nombre: string; created_at: string };
 
-const SEGUNDOS_POR_FOTO = 4;
 const CONSULTA_CADA_MS = 3000;
 const RECARGA_COMPLETA_MS = 60_000; // rearma la lista entera (por ejemplo, fotos que se vuelven a mostrar)
 
@@ -32,20 +31,30 @@ export default function Pantalla() {
   const actualRef = useRef<FotoPantalla | null>(null);
   const avanzar = useRef<() => void>(() => undefined);
 
-  // Datos del evento y QR.
+  // Datos del evento y QR. Se vuelven a consultar para aplicar cambios de estilo sin recargar.
   useEffect(() => {
-    supabase.rpc('pantalla_evento', { p_token: token }).then(({ data }) => {
+    let activo = true;
+    const traerEvento = async () => {
+      const { data, error } = await supabase.rpc('pantalla_evento', { p_token: token });
+      if (!activo || error) return;
       const ev = (data as EventoPantalla[] | null)?.[0] ?? null;
-      setEvento(ev);
-      if (ev) {
-        QRCode.toDataURL(linkInvitados(ev.slug), {
-          width: 480,
-          margin: 1,
-          color: { dark: '#30262B', light: '#FFFFFF' },
-        }).then(setQr);
-      }
-    });
+      setEvento((prev) => (JSON.stringify(prev) === JSON.stringify(ev) ? prev : ev));
+    };
+    void traerEvento();
+    const t = setInterval(traerEvento, 30_000);
+    return () => {
+      activo = false;
+      clearInterval(t);
+    };
   }, [token]);
+
+  const slug = evento?.slug;
+  useEffect(() => {
+    if (!slug) return;
+    QRCode.toDataURL(linkInvitados(slug), { width: 480, margin: 1, color: { dark: '#30262B', light: '#FFFFFF' } }).then(setQr);
+  }, [slug]);
+
+  const segundos = segundosDe(evento?.estilo);
 
   // Fotos: primero todas, después solo las nuevas cada pocos segundos.
   const consultar = useCallback(async () => {
@@ -99,8 +108,9 @@ export default function Pantalla() {
     setTotal(lista.length);
   }, [token]);
 
+  const hayEvento = Boolean(evento);
   useEffect(() => {
-    if (!evento) return;
+    if (!hayEvento) return;
     void consultar();
     void consultarBajas();
     const t = setInterval(() => {
@@ -112,11 +122,11 @@ export default function Pantalla() {
       clearInterval(t);
       clearInterval(r);
     };
-  }, [evento, consultar, consultarBajas, recargarTodo]);
+  }, [hayEvento, consultar, consultarBajas, recargarTodo]);
 
   // Carrusel: las nuevas tienen prioridad; si no hay, una al azar evitando repetir seguido.
   useEffect(() => {
-    if (!evento) return;
+    if (!hayEvento) return;
     const siguiente = () => {
       let foto = nuevas.current.shift();
       if (!foto && todas.current.length > 0) {
@@ -133,16 +143,16 @@ export default function Pantalla() {
         if (proxima) new Image().src = urlPublica(proxima.key_original);
       }
     };
-    let t = window.setInterval(siguiente, SEGUNDOS_POR_FOTO * 1000);
+    let t = window.setInterval(siguiente, segundos * 1000);
     // Avanzar a mano (por ejemplo, al borrar la foto en pantalla) reinicia el turno.
     avanzar.current = () => {
       clearInterval(t);
       siguiente();
-      t = window.setInterval(siguiente, SEGUNDOS_POR_FOTO * 1000);
+      t = window.setInterval(siguiente, segundos * 1000);
     };
-    siguiente();
+    if (!actualRef.current) siguiente();
     return () => clearInterval(t);
-  }, [evento]);
+  }, [hayEvento, segundos]);
 
   // Apenas llegan las primeras fotos, se muestra una sin esperar al próximo turno.
   useEffect(() => {
@@ -185,7 +195,7 @@ export default function Pantalla() {
   const enTrivia = trivia && trivia.fase !== 'espera';
 
   return (
-    <main className={cursorQuieto ? 'pantalla sin-cursor' : 'pantalla'} style={tema}>
+    <main className={`pantalla ${momentoDe(evento.estilo)}${cursorQuieto ? ' sin-cursor' : ''}`} style={tema}>
       {enTrivia ? (
         <TriviaPantalla estado={trivia} titulo={evento.titulo} />
       ) : actual ? (

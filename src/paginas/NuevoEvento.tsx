@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useSesion } from '../lib/sesion';
 import { generarSlug } from '../lib/formato';
 import { COLORES, COLOR_POR_DEFECTO } from '../lib/colores';
-import { NOMBRES_TIPO, type TipoEvento } from '../lib/tipos';
+import { NOMBRES_TIPO, SEGUNDOS_POR_DEFECTO, type MomentoEvento, type TipoEvento } from '../lib/tipos';
 import EncabezadoPanel from '../componentes/EncabezadoPanel';
 
 export default function NuevoEvento() {
@@ -15,6 +15,7 @@ export default function NuevoEvento() {
   const [fecha, setFecha] = useState('');
   const [color, setColor] = useState<string>(COLOR_POR_DEFECTO);
   const [bienvenida, setBienvenida] = useState('');
+  const [momento, setMomento] = useState<MomentoEvento>('noche');
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
 
@@ -33,7 +34,7 @@ export default function NuevoEvento() {
           titulo: titulo.trim(),
           tipo,
           fecha: fecha || null,
-          estilo: { color, bienvenida: bienvenida.trim() || undefined },
+          estilo: { color, momento, segundos: SEGUNDOS_POR_DEFECTO, bienvenida: bienvenida.trim() || undefined },
         })
         .select('id')
         .single();
@@ -84,6 +85,29 @@ export default function NuevoEvento() {
               <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
             </label>
           </div>
+
+          <fieldset className="campo">
+            <legend>¿Es de tarde o de noche?</legend>
+            <div className="momentos">
+              <label className={momento === 'tarde' ? 'momento elegido' : 'momento'}>
+                <input type="radio" name="momento" checked={momento === 'tarde'} onChange={() => setMomento('tarde')} />
+                <span className="momento-muestra tarde" aria-hidden="true">☀</span>
+                <span>
+                  <strong>De tarde</strong>
+                  <small>Fondo claro, crema</small>
+                </span>
+              </label>
+              <label className={momento === 'noche' ? 'momento elegido' : 'momento'}>
+                <input type="radio" name="momento" checked={momento === 'noche'} onChange={() => setMomento('noche')} />
+                <span className="momento-muestra noche" aria-hidden="true">☾</span>
+                <span>
+                  <strong>De noche</strong>
+                  <small>Fondo oscuro, no encandila</small>
+                </span>
+              </label>
+            </div>
+            <p className="ayuda">Cambia cómo se ven la galería y la pantalla del salón. Lo podés cambiar después.</p>
+          </fieldset>
 
           <fieldset className="campo">
             <legend>Color de la galería</legend>

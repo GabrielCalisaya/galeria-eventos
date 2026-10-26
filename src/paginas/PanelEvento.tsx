@@ -9,6 +9,7 @@ import { NOMBRES_TIPO, type Evento } from '../lib/tipos';
 import EncabezadoPanel from '../componentes/EncabezadoPanel';
 import Galeria from '../componentes/Galeria';
 import DescargaZip from '../componentes/DescargaZip';
+import AjustesEvento from '../componentes/AjustesEvento';
 
 export default function PanelEvento() {
   const { id } = useParams();
@@ -206,6 +207,8 @@ export default function PanelEvento() {
             </div>
           </section>
         </div>
+
+        <AjustesEvento evento={evento} onGuardado={setEvento} />
 
         <section className="seccion-fotos">
           <div className="fila-titulo">

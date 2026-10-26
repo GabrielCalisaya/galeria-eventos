@@ -6,7 +6,7 @@ import { useSubidas } from '../lib/subida';
 import { useTrivia } from '../lib/trivia';
 import { formatearFecha, separarNombres } from '../lib/formato';
 import { colorValido } from '../lib/colores';
-import { FRASE_TIPO, type EventoPublico } from '../lib/tipos';
+import { FRASE_TIPO, momentoDe, type EventoPublico } from '../lib/tipos';
 import Galeria from '../componentes/Galeria';
 import ProgresoSubida from '../componentes/ProgresoSubida';
 import TriviaInvitado from '../componentes/TriviaInvitado';
@@ -46,6 +46,21 @@ export default function EventoInvitado() {
     void cargar();
   }, [cargar]);
 
+  // Si el anfitrión cambia el estilo (tarde/noche, color, bienvenida), se aplica sin recargar.
+  const listo = estado.tipo === 'listo';
+  useEffect(() => {
+    if (!listo) return;
+    const t = setInterval(async () => {
+      const { data } = await supabase.rpc('evento_publico', { p_slug: slug });
+      const nuevo = (data as EventoPublico[] | null)?.[0];
+      if (!nuevo) return;
+      setEstado((prev) =>
+        prev.tipo === 'listo' && JSON.stringify(prev.evento) !== JSON.stringify(nuevo) ? { tipo: 'listo', evento: nuevo } : prev,
+      );
+    }, 45_000);
+    return () => clearInterval(t);
+  }, [listo, slug]);
+
   if (estado.tipo === 'cargando') return <div className="invitado cargando-invitado" aria-busy="true" />;
 
   if (estado.tipo !== 'listo') {
@@ -68,9 +83,9 @@ export default function EventoInvitado() {
   const tema = { '--acento': colorValido(ev.estilo?.color) } as CSSProperties;
 
   return (
-    <main className="invitado" style={tema}>
+    <main className={`invitado ${momentoDe(ev.estilo)}`} style={tema}>
       {ev.invitado_id ? <GaleriaInvitado evento={ev} /> : <PedirNombre slug={slug} evento={ev} onListo={cargar} />}
-      <PieNewTech />
+      <PieNewTech oscuro={momentoDe(ev.estilo) === 'noche'} />
     </main>
   );
 }

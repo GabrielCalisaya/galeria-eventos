@@ -1,9 +1,27 @@
 export type TipoEvento = 'casamiento' | 'quince' | 'cumpleanos' | 'aniversario' | 'corporativo' | 'otro';
 
+export type MomentoEvento = 'tarde' | 'noche';
+
 export type EstiloEvento = {
   color?: string;
   bienvenida?: string;
+  /** Define si la galería y la pantalla se ven claras (tarde) u oscuras (noche). */
+  momento?: MomentoEvento;
+  /** Segundos que se muestra cada foto en la pantalla del salón. */
+  segundos?: number;
 };
+
+export const SEGUNDOS_PANTALLA = [2, 3, 4, 6, 8] as const;
+export const SEGUNDOS_POR_DEFECTO = 3;
+
+export function momentoDe(estilo: EstiloEvento | undefined): MomentoEvento {
+  return estilo?.momento === 'noche' ? 'noche' : 'tarde';
+}
+
+export function segundosDe(estilo: EstiloEvento | undefined): number {
+  const s = Number(estilo?.segundos);
+  return Number.isFinite(s) && s >= 2 && s <= 15 ? s : SEGUNDOS_POR_DEFECTO;
+}
 
 export type Evento = {
   id: string;
