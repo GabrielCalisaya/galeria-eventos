@@ -3,11 +3,14 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useFotos } from '../lib/fotos';
 import { useSubidas } from '../lib/subida';
-import { formatearFecha } from '../lib/formato';
+import { useTrivia } from '../lib/trivia';
+import { formatearFecha, separarNombres } from '../lib/formato';
 import { colorValido } from '../lib/colores';
-import type { EventoPublico } from '../lib/tipos';
+import { FRASE_TIPO, type EventoPublico } from '../lib/tipos';
 import Galeria from '../componentes/Galeria';
 import ProgresoSubida from '../componentes/ProgresoSubida';
+import TriviaInvitado from '../componentes/TriviaInvitado';
+import { PieNewTech } from '../componentes/Marca';
 
 type Estado =
   | { tipo: 'cargando' }
@@ -43,12 +46,13 @@ export default function EventoInvitado() {
     void cargar();
   }, [cargar]);
 
-  if (estado.tipo === 'cargando') return <div className="noche cargando-noche" aria-busy="true" />;
+  if (estado.tipo === 'cargando') return <div className="invitado cargando-invitado" aria-busy="true" />;
 
   if (estado.tipo !== 'listo') {
     return (
-      <main className="noche">
-        <div className="mensaje-noche">
+      <main className="invitado">
+        <div className="mensaje-invitado">
+          <p className="ornamento" aria-hidden="true">♡</p>
           <h1>{estado.tipo === 'no-encontrado' ? 'Esta galería no está disponible' : 'Algo falló'}</h1>
           <p>
             {estado.tipo === 'no-encontrado'
@@ -64,22 +68,38 @@ export default function EventoInvitado() {
   const tema = { '--acento': colorValido(ev.estilo?.color) } as CSSProperties;
 
   return (
-    <main className="noche" style={tema}>
-      {ev.invitado_id ? (
-        <GaleriaInvitado evento={ev} />
-      ) : (
-        <PedirNombre slug={slug} evento={ev} onListo={cargar} />
-      )}
+    <main className="invitado" style={tema}>
+      {ev.invitado_id ? <GaleriaInvitado evento={ev} /> : <PedirNombre slug={slug} evento={ev} onListo={cargar} />}
+      <PieNewTech />
     </main>
   );
 }
 
 function Portada({ evento, compacta = false }: { evento: EventoPublico; compacta?: boolean }) {
+  const nombres = separarNombres(evento.titulo);
   return (
     <header className={compacta ? 'portada compacta' : 'portada'}>
-      <h1 className="portada-nombres">{evento.titulo}</h1>
-      {evento.fecha && <p className="portada-fecha">{formatearFecha(evento.fecha)}</p>}
-      {!compacta && evento.estilo?.bienvenida && <p className="portada-bienvenida">{evento.estilo.bienvenida}</p>}
+      <div className="portada-tarjeta">
+        <span className="portada-anillos" aria-hidden="true" />
+        {!compacta && (
+          <span className="portada-sello" aria-hidden="true">
+            ♡
+          </span>
+        )}
+        <p className="portada-frase">{FRASE_TIPO[evento.tipo] ?? 'Celebramos'}</p>
+        <h1 className="portada-nombres">
+          {nombres ? (
+            <>
+              <span>{nombres[0]}</span>
+              <span className="portada-y">&amp; {nombres[1]}</span>
+            </>
+          ) : (
+            evento.titulo
+          )}
+        </h1>
+        {evento.fecha && <p className="portada-fecha">{formatearFecha(evento.fecha)}</p>}
+        {!compacta && evento.estilo?.bienvenida && <p className="portada-bienvenida">{evento.estilo.bienvenida}</p>}
+      </div>
     </header>
   );
 }
@@ -93,7 +113,7 @@ function PedirNombre({ slug, evento, onListo }: { slug: string; evento: EventoPu
     return (
       <>
         <Portada evento={evento} />
-        <div className="mensaje-noche">
+        <div className="mensaje-invitado corto">
           <p>Este evento ya no recibe fotos nuevas.</p>
         </div>
       </>
@@ -119,7 +139,11 @@ function PedirNombre({ slug, evento, onListo }: { slug: string; evento: EventoPu
     <>
       <Portada evento={evento} />
       <form className="nombre-form" onSubmit={entrar}>
-        <label htmlFor="nombre">¿Cómo te llamás?</label>
+        <p className="etiqueta centrada">✦ Galería compartida ✦</p>
+        <h2 className="nombre-titulo">Sumá tus fotos de la noche</h2>
+        <label htmlFor="nombre" className="nombre-label">
+          ¿Cómo te llamás?
+        </label>
         <input
           id="nombre"
           required
@@ -129,9 +153,9 @@ function PedirNombre({ slug, evento, onListo }: { slug: string; evento: EventoPu
           onChange={(e) => setNombre(e.target.value)}
           placeholder="Tu nombre"
         />
-        <p className="nombre-ayuda">Así los anfitriones saben quién sacó cada foto.</p>
-        {error && <p className="error-noche" role="alert">{error}</p>}
-        <button className="boton-noche" disabled={enviando || !nombre.trim()}>
+        <p className="nombre-ayuda">Así los anfitriones saben quién sacó cada foto. No hace falta descargar nada.</p>
+        {error && <p className="error" role="alert">{error}</p>}
+        <button className="boton-principal" disabled={enviando || !nombre.trim()}>
           {enviando ? 'Entrando…' : 'Entrar a la galería'}
         </button>
       </form>
@@ -142,26 +166,48 @@ function PedirNombre({ slug, evento, onListo }: { slug: string; evento: EventoPu
 function GaleriaInvitado({ evento }: { evento: EventoPublico }) {
   const { fotos, cargando, hayMas, verMas } = useFotos(evento.id);
   const { items, agregar, reintentar, limpiarListas } = useSubidas(evento.id);
+  const { estado: trivia, refrescar } = useTrivia(evento.id);
+  const [triviaMinimizada, setTriviaMinimizada] = useState(false);
   const selector = useRef<HTMLInputElement>(null);
-  const galeriaRef = useRef<HTMLElement>(null);
   const abierto = evento.estado === 'activo';
+
+  const triviaActiva = Boolean(trivia && trivia.fase !== 'espera');
+  const preguntaActual = trivia?.pregunta?.id ?? trivia?.fase;
+
+  // Cada pregunta nueva vuelve a abrir la trivia aunque la hayan minimizado.
+  useEffect(() => {
+    setTriviaMinimizada(false);
+  }, [preguntaActual]);
 
   return (
     <>
       <Portada evento={evento} compacta={fotos.length > 0} />
 
+      {triviaActiva && triviaMinimizada && (
+        <button type="button" className="aviso-trivia" onClick={() => setTriviaMinimizada(false)}>
+          ♡ La trivia está en juego · Volver
+        </button>
+      )}
+
       {items.length > 0 && <ProgresoSubida items={items} onReintentar={reintentar} onCerrar={limpiarListas} />}
 
-      <section className="galeria-noche" ref={galeriaRef} aria-label="Galería">
-        {cargando && <div className="cargando-noche corto" aria-busy="true" />}
-        {!cargando && fotos.length === 0 && (
-          <p className="vacio-noche">
-            {abierto ? 'Todavía no hay fotos. Subí la primera de la noche.' : 'Este evento no tiene fotos.'}
+      <section className="galeria-invitado" aria-label="Galería">
+        {fotos.length > 0 && (
+          <p className="galeria-cuenta">
+            {fotos.length}
+            {hayMas ? '+' : ''} {fotos.length === 1 ? 'foto compartida' : 'fotos compartidas'}
           </p>
+        )}
+        {cargando && <div className="cargando-invitado corto" aria-busy="true" />}
+        {!cargando && fotos.length === 0 && (
+          <div className="vacio-invitado">
+            <p className="ornamento" aria-hidden="true">✦</p>
+            <p>{abierto ? 'Todavía no hay fotos. ¡Subí la primera de la noche!' : 'Este evento no tiene fotos.'}</p>
+          </div>
         )}
         <Galeria fotos={fotos} />
         {hayMas && (
-          <button type="button" className="boton-noche secundario ver-mas" onClick={verMas}>
+          <button type="button" className="boton-secundario ver-mas" onClick={verMas}>
             Ver más fotos
           </button>
         )}
@@ -180,10 +226,19 @@ function GaleriaInvitado({ evento }: { evento: EventoPublico }) {
               e.target.value = '';
             }}
           />
-          <button type="button" className="boton-noche" onClick={() => selector.current?.click()}>
-            Subir fotos
+          <button type="button" className="boton-principal" onClick={() => selector.current?.click()}>
+            <span aria-hidden="true">＋</span> Subir fotos
           </button>
         </div>
+      )}
+
+      {triviaActiva && !triviaMinimizada && trivia && (
+        <TriviaInvitado
+          eventId={evento.id}
+          estado={trivia}
+          onRefrescar={refrescar}
+          onMinimizar={() => setTriviaMinimizada(true)}
+        />
       )}
     </>
   );

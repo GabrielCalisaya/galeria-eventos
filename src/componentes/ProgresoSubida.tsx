@@ -21,12 +21,12 @@ export default function ProgresoSubida({ items, onReintentar, onCerrar }: Props)
       <div className="progreso-cabecera">
         <span>{resumen}</span>
         {enCurso === 0 && errores.length > 0 && (
-          <button type="button" className="boton-texto-noche" onClick={onReintentar}>
+          <button type="button" className="boton-texto" onClick={onReintentar}>
             Reintentar
           </button>
         )}
         {enCurso === 0 && errores.length === 0 && (
-          <button type="button" className="boton-texto-noche" onClick={onCerrar}>
+          <button type="button" className="boton-texto" onClick={onCerrar}>
             Listo
           </button>
         )}
@@ -43,7 +43,7 @@ export default function ProgresoSubida({ items, onReintentar, onCerrar }: Props)
           </li>
         ))}
       </ul>
-      {errores[0]?.error && enCurso === 0 && <p className="error-noche">{errores[0].error}</p>}
+      {errores[0]?.error && enCurso === 0 && <p className="error">{errores[0].error}</p>}
     </section>
   );
 }

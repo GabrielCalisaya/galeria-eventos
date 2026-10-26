@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { esAnonima, useSesion } from '../lib/sesion';
+import { Marca, PieNewTech } from '../componentes/Marca';
 
 export default function Entrar() {
   const sesion = useSesion();
@@ -36,13 +37,17 @@ export default function Entrar() {
   }
 
   return (
-    <main className="panel">
-      <div className="panel-columna angosta">
-        <h1>Entrar</h1>
+    <main className="panel acceso">
+      <div className="acceso-marca">
+        <Marca />
+      </div>
+      <div className="tarjeta acceso-tarjeta">
+        <p className="etiqueta">Panel del anfitrión</p>
+        <h1>{estado === 'enviado' ? 'Revisá tu email' : 'Entrar'}</h1>
         {estado === 'enviado' ? (
           <p>
             Te mandamos un link a <strong>{email}</strong>. Abrilo desde este mismo dispositivo para entrar a tu
-            panel.
+            panel. Si no lo ves, fijate en la carpeta de spam.
           </p>
         ) : (
           <form onSubmit={enviar} className="formulario">
@@ -65,6 +70,7 @@ export default function Entrar() {
           </form>
         )}
       </div>
+      <PieNewTech />
     </main>
   );
 }

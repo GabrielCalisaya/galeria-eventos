@@ -6,35 +6,40 @@ type Props = {
   fotos: Media[];
   /** Contenido extra sobre cada miniatura (por ejemplo, el botón de ocultar). */
   acciones?: (foto: Media) => ReactNode;
+  /** Si viene, la galería está en modo selección: tocar una foto la marca en vez de abrirla. */
+  seleccion?: Set<string>;
+  onAlternar?: (id: string) => void;
 };
 
-export default function Galeria({ fotos, acciones }: Props) {
+export default function Galeria({ fotos, acciones, seleccion, onAlternar }: Props) {
   const [abierta, setAbierta] = useState<number | null>(null);
+  const seleccionando = Boolean(seleccion && onAlternar);
 
   return (
     <>
-      <ul className="grilla">
-        {fotos.map((f, i) => (
-          <li key={f.id} className={f.oculta ? 'grilla-item oculta' : 'grilla-item'}>
-            <button
-              type="button"
-              className="grilla-foto"
-              onClick={() => setAbierta(i)}
-              aria-label={`Foto de ${f.autor_nombre}`}
-            >
-              <img src={urlPublica(f.key_thumb)} alt="" loading="lazy" decoding="async" />
-            </button>
-            {acciones?.(f)}
-          </li>
-        ))}
+      <ul className={seleccionando ? 'grilla seleccionando' : 'grilla'}>
+        {fotos.map((f, i) => {
+          const marcada = seleccion?.has(f.id) ?? false;
+          const clases = ['grilla-item', f.oculta && 'oculta', marcada && 'marcada'].filter(Boolean).join(' ');
+          return (
+            <li key={f.id} className={clases}>
+              <button
+                type="button"
+                className="grilla-foto"
+                onClick={() => (seleccionando ? onAlternar!(f.id) : setAbierta(i))}
+                aria-label={seleccionando ? `Seleccionar foto de ${f.autor_nombre}` : `Foto de ${f.autor_nombre}`}
+                aria-pressed={seleccionando ? marcada : undefined}
+              >
+                <img src={urlPublica(f.key_thumb)} alt="" loading="lazy" decoding="async" />
+                {seleccionando && <span className="marca-seleccion" aria-hidden="true" />}
+              </button>
+              {!seleccionando && acciones?.(f)}
+            </li>
+          );
+        })}
       </ul>
       {abierta !== null && fotos[abierta] && (
-        <Visor
-          fotos={fotos}
-          indice={abierta}
-          onCambiar={setAbierta}
-          onCerrar={() => setAbierta(null)}
-        />
+        <Visor fotos={fotos} indice={abierta} onCambiar={setAbierta} onCerrar={() => setAbierta(null)} />
       )}
     </>
   );

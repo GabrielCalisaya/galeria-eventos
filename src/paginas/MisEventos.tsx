@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { NOMBRES_TIPO, type Evento } from '../lib/tipos';
 import { formatearFecha } from '../lib/formato';
+import { colorValido } from '../lib/colores';
 import EncabezadoPanel from '../componentes/EncabezadoPanel';
 
 export default function MisEventos() {
@@ -25,7 +26,10 @@ export default function MisEventos() {
       <EncabezadoPanel />
       <div className="panel-columna">
         <div className="fila-titulo">
-          <h1>Mis eventos</h1>
+          <div>
+            <p className="etiqueta">Panel del anfitrión</p>
+            <h1>Mis eventos</h1>
+          </div>
           <Link className="boton boton-primario" to="/panel/nuevo">
             Crear evento
           </Link>
@@ -44,11 +48,17 @@ export default function MisEventos() {
           <ul className="lista-eventos">
             {eventos.map((ev) => (
               <li key={ev.id}>
-                <Link to={`/panel/${ev.id}`} className="evento-fila">
-                  <span className="evento-titulo">{ev.titulo}</span>
-                  <span className="evento-meta">
-                    {NOMBRES_TIPO[ev.tipo]}
-                    {ev.fecha ? `, ${formatearFecha(ev.fecha)}` : ''}
+                <Link to={`/panel/${ev.id}`} className="evento-tarjeta" style={{ '--acento': colorValido(ev.estilo?.color) } as CSSProperties}>
+                  <span className="evento-franja" aria-hidden="true">
+                    ♡
+                  </span>
+                  <span className="evento-cuerpo">
+                    <span className="etiqueta">{NOMBRES_TIPO[ev.tipo]}</span>
+                    <span className="evento-titulo">{ev.titulo}</span>
+                    <span className="evento-meta">{ev.fecha ? formatearFecha(ev.fecha) : 'Sin fecha'}</span>
+                  </span>
+                  <span className="evento-flecha" aria-hidden="true">
+                    ↗
                   </span>
                 </Link>
               </li>

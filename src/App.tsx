@@ -5,7 +5,10 @@ import Entrar from './paginas/Entrar';
 import MisEventos from './paginas/MisEventos';
 import NuevoEvento from './paginas/NuevoEvento';
 import PanelEvento from './paginas/PanelEvento';
+import TriviaPanel from './paginas/TriviaPanel';
+import Tarjetas from './paginas/Tarjetas';
 import EventoInvitado from './paginas/EventoInvitado';
+import Pantalla from './paginas/Pantalla';
 import RutaAnfitrion from './componentes/RutaAnfitrion';
 
 export default function App() {
@@ -31,8 +34,11 @@ export default function App() {
         <Route path="/panel" element={<MisEventos />} />
         <Route path="/panel/nuevo" element={<NuevoEvento />} />
         <Route path="/panel/:id" element={<PanelEvento />} />
+        <Route path="/panel/:id/trivia" element={<TriviaPanel />} />
+        <Route path="/panel/:id/tarjetas" element={<Tarjetas />} />
       </Route>
       <Route path="/e/:slug" element={<EventoInvitado />} />
+      <Route path="/pantalla/:token" element={<Pantalla />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

@@ -17,6 +17,7 @@ export type Evento = {
   estado: 'borrador' | 'activo' | 'finalizado' | 'vencido';
   limite_fotos: number;
   vence_album: string | null;
+  pantalla_token: string;
   created_at: string;
 };
 
@@ -55,4 +56,14 @@ export const NOMBRES_TIPO: Record<TipoEvento, string> = {
   aniversario: 'Aniversario',
   corporativo: 'Evento corporativo',
   otro: 'Otro',
+};
+
+/** Frase corta sobre los nombres en la portada, según el tipo de evento. */
+export const FRASE_TIPO: Record<TipoEvento, string> = {
+  casamiento: 'Nuestra boda',
+  quince: 'Mis quince',
+  cumpleanos: 'Mi cumple',
+  aniversario: 'Nuestro aniversario',
+  corporativo: 'Nuestro evento',
+  otro: 'Celebramos',
 };

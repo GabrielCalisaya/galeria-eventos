@@ -15,3 +15,13 @@ export function generarSlug(largo = 12): string {
 export function linkInvitados(slug: string): string {
   return `${window.location.origin}/e/${slug}`;
 }
+
+export function linkPantalla(token: string): string {
+  return `${window.location.origin}/pantalla/${token}`;
+}
+
+/** Separa "Sofi y Martín" / "Sofi & Martín" en dos nombres para la portada. */
+export function separarNombres(titulo: string): [string, string] | null {
+  const m = titulo.match(/^(.+?)\s+(?:y|&|e)\s+(.+)$/i);
+  return m ? [m[1].trim(), m[2].trim()] : null;
+}

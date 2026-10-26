@@ -1,6 +1,7 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useSesion } from '../lib/sesion';
+import { Marca } from './Marca';
 
 export default function EncabezadoPanel() {
   const sesion = useSesion();
@@ -13,9 +14,7 @@ export default function EncabezadoPanel() {
 
   return (
     <header className="encabezado">
-      <Link to="/panel" className="marca">
-        Galería del evento
-      </Link>
+      <Marca a="/panel" />
       <div className="encabezado-derecha">
         <span className="encabezado-email">{sesion?.user.email}</span>
         <button type="button" className="boton-texto" onClick={salir}>
