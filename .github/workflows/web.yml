@@ -29,12 +29,39 @@ jobs:
       - name: Verificar tipos y compilar
         run: npm run build
 
-      - name: Subir a Hostinger
+      - name: Preparar datos de FTP
+        id: ftp
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && env.FTP_SERVER != ''
+        env:
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_DIR: ${{ secrets.FTP_DIR }}
+        run: |
+          # Acepta el servidor con o sin "ftp://", espacios o barra final.
+          servidor=$(printf '%s' "$FTP_SERVER" | tr -d '[:space:]' | sed -E 's#^[a-zA-Z]+://##; s#/.*$##; s#:[0-9]+$##')
+          usuario=$(printf '%s' "$FTP_USERNAME" | tr -d '[:space:]')
+          carpeta=$(printf '%s' "$FTP_DIR" | tr -d '[:space:]')
+          [ -z "$carpeta" ] && carpeta="./"
+          case "$carpeta" in */) ;; *) carpeta="$carpeta/" ;; esac
+          echo "::add-mask::$servidor"
+          echo "servidor=$servidor" >> "$GITHUB_OUTPUT"
+          echo "usuario=$usuario" >> "$GITHUB_OUTPUT"
+          echo "carpeta=$carpeta" >> "$GITHUB_OUTPUT"
+          # Diagnóstico sin revelar el valor: forma del servidor.
+          if printf '%s' "$servidor" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Servidor: dirección IP con formato válido."
+          elif printf '%s' "$servidor" | grep -q '\.'; then
+            echo "Servidor: nombre de host."
+          else
+            echo "::error::FTP_SERVER no parece una IP ni un dominio. Revisá ese secreto."
+            exit 1
+          fi
+
+      - name: Subir a Hostinger
+        if: steps.ftp.outputs.servidor != ''
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
+          server: ${{ steps.ftp.outputs.servidor }}
+          username: ${{ steps.ftp.outputs.usuario }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./dist/
-          server-dir: ${{ secrets.FTP_DIR }}
+          server-dir: ${{ steps.ftp.outputs.carpeta }}
