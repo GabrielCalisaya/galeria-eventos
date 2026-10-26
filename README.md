@@ -34,7 +34,8 @@ Seguí los pasos en orden. Ninguna clave se escribe en el código: todas van com
    - **Redirect URLs:** agregá `https://fotos.tudominio.com/panel`.
 4. Anotá estos datos:
    - **Project ref:** el código que aparece en la URL del proyecto (`supabase.com/dashboard/project/ESTE-CODIGO`).
-   - **Project URL** y **anon public key:** en **Project Settings → API**.
+   - **Project URL:** en **Project Settings → Data API** (tiene la forma `https://xxxx.supabase.co`).
+   - **Publishable key:** en **Project Settings → API Keys** (empieza con `sb_publishable_`). La *secret key* no hace falta copiarla: Supabase se la da sola a la función.
 5. Creá un **token de acceso** en tu cuenta: avatar → **Account → Access Tokens → Generate new token**.
 
 ### 2. Cloudflare R2
@@ -71,7 +72,7 @@ En el repo: **Settings → Secrets and variables → Actions → New repository 
 | Secreto | Valor |
 | --- | --- |
 | `VITE_SUPABASE_URL` | Project URL de Supabase |
-| `VITE_SUPABASE_ANON_KEY` | anon public key de Supabase |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Publishable key de Supabase (`sb_publishable_...`) |
 | `VITE_R2_PUBLIC_URL` | URL pública del bucket, sin barra final |
 | `SUPABASE_ACCESS_TOKEN` | Token de acceso de tu cuenta de Supabase |
 | `SUPABASE_PROJECT_REF` | Project ref |
@@ -86,7 +87,7 @@ En el repo: **Settings → Secrets and variables → Actions → New repository 
 | `FTP_PASSWORD` | Contraseña FTP |
 | `FTP_DIR` | Carpeta del subdominio, terminada en `/` (por ejemplo `/domains/tudominio.com/public_html/fotos/`) |
 
-> Las claves que empiezan con `VITE_` quedan visibles en la web publicada; eso es normal y seguro, porque la anon key no da permisos por sí sola: las reglas de seguridad de la base deciden qué puede hacer cada uno. Las demás nunca salen de GitHub y Supabase.
+> Las claves que empiezan con `VITE_` quedan visibles en la web publicada; eso es normal y seguro, porque la publishable key no da permisos por sí sola: las reglas de seguridad de la base deciden qué puede hacer cada uno. Las demás nunca salen de GitHub y Supabase.
 
 ### 5. Primer despliegue
 

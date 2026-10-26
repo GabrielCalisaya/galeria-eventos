@@ -15,7 +15,7 @@ export default function App() {
         <div className="panel-columna">
           <h1>Falta configurar la conexión</h1>
           <p>
-            Definí <code>VITE_SUPABASE_URL</code> y <code>VITE_SUPABASE_ANON_KEY</code>. Los pasos están en el
+            Definí <code>VITE_SUPABASE_URL</code> y <code>VITE_SUPABASE_PUBLISHABLE_KEY</code>. Los pasos están en el
             README del proyecto.
           </p>
         </div>

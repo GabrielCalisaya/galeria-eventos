@@ -56,4 +56,4 @@ jobs:
 
       - name: Desplegar función de subida
         if: steps.chequeo.outputs.listo == 'si'
-        run: supabase functions deploy sign-upload --project-ref "$SUPABASE_PROJECT_REF"
+        run: supabase functions deploy sign-upload --no-verify-jwt --project-ref "$SUPABASE_PROJECT_REF"

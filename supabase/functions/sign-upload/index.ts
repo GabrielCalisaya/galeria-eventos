@@ -22,6 +22,26 @@ const r2 = new AwsClient({
   region: 'auto',
 });
 
+// Supabase está reemplazando la clave service_role por las "secret keys".
+// Se usa la nueva si existe y, si no, la anterior, así funciona en proyectos nuevos y viejos.
+function claveDelEntorno(nueva: string, anterior: string): string {
+  const json = Deno.env.get(nueva);
+  if (json) {
+    try {
+      const claves = JSON.parse(json) as Record<string, string>;
+      const valor = claves.default ?? Object.values(claves)[0];
+      if (valor) return valor;
+    } catch {
+      /* formato inesperado: se usa la anterior */
+    }
+  }
+  const valor = Deno.env.get(anterior);
+  if (!valor) throw new Error(`Falta ${nueva} o ${anterior}`);
+  return valor;
+}
+
+const CLAVE_SECRETA = claveDelEntorno('SUPABASE_SECRET_KEYS', 'SUPABASE_SERVICE_ROLE_KEY');
+
 const cors = {
   'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') || '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -54,15 +74,16 @@ Deno.serve(async (req) => {
   const authHeader = req.headers.get('Authorization');
   if (!authHeader) return respuesta(401, { error: 'Falta la sesión' });
 
-  const url = Deno.env.get('SUPABASE_URL')!;
-  // Cliente con la sesión del usuario: para saber quién es.
-  const comoUsuario = createClient(url, Deno.env.get('SUPABASE_ANON_KEY')!, {
-    global: { headers: { Authorization: authHeader } },
-  });
-  // Cliente con permisos de servicio: para crear las filas.
-  const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!token) return respuesta(401, { error: 'Falta la sesión' });
 
-  const { data: userData, error: userError } = await comoUsuario.auth.getUser();
+  // Cliente con permisos de servicio: valida la sesión y crea las filas.
+  const admin = createClient(Deno.env.get('SUPABASE_URL')!, CLAVE_SECRETA, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  // Valida el token del usuario contra Supabase Auth (anfitrión o invitado anónimo).
+  const { data: userData, error: userError } = await admin.auth.getUser(token);
   if (userError || !userData.user) return respuesta(401, { error: 'Sesión inválida' });
   const userId = userData.user.id;
 

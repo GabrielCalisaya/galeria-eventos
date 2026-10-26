@@ -2,5 +2,6 @@
 project_id = "galeria-eventos"
 
 [functions.sign-upload]
-# La función valida la sesión por su cuenta (incluye sesiones anónimas de invitados).
-verify_jwt = true
+# El control automático de la plataforma solo entiende las claves anteriores.
+# La función valida la sesión por su cuenta (auth.getUser), incluidas las de invitados anónimos.
+verify_jwt = false
