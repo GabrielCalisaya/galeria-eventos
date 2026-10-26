@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 
 /** Llama a una función de Supabase y devuelve su respuesta, o lanza un Error con un mensaje para mostrar. */
-export async function invocar<T>(nombre: string, body: unknown): Promise<T> {
+export async function invocar<T>(nombre: string, body: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.functions.invoke(nombre, { body });
   if (error) {
     const ctx = (error as { context?: Response }).context;
