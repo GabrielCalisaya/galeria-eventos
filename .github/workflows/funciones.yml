@@ -20,7 +20,8 @@ jobs:
       - name: Verificar tipos
         run: |
           set +e
-          deno check supabase/functions/sign-upload/index.ts > resultado.txt 2>&1
+          cd supabase/functions/sign-upload
+          deno check index.ts > resultado.txt 2>&1
           estado=$?
           cat resultado.txt
           if [ $estado -ne 0 ]; then

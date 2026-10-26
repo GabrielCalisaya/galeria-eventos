@@ -4,8 +4,8 @@
 // devuelve una URL PUT firmada por cada archivo (original y miniatura).
 // Los archivos nunca pasan por acá: van directo del celular a R2.
 
-import { createClient } from 'npm:@supabase/supabase-js@2';
-import { AwsClient } from 'npm:aws4fetch@1';
+import { createClient } from '@supabase/supabase-js';
+import { AwsClient } from 'aws4fetch';
 
 const MAX_ARCHIVOS_POR_TANDA = 20;
 const MAX_BYTES_FOTO = 6 * 1024 * 1024; // la app comprime a ~0,5 MB; esto es un tope de seguridad
