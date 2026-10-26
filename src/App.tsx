@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { configFaltante } from './lib/supabase';
 import Inicio from './paginas/Inicio';
 import Entrar from './paginas/Entrar';
+import Restablecer from './paginas/Restablecer';
 import MisEventos from './paginas/MisEventos';
 import NuevoEvento from './paginas/NuevoEvento';
 import PanelEvento from './paginas/PanelEvento';
@@ -30,6 +31,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<Inicio />} />
       <Route path="/entrar" element={<Entrar />} />
+      <Route path="/restablecer" element={<Restablecer />} />
       <Route element={<RutaAnfitrion />}>
         <Route path="/panel" element={<MisEventos />} />
         <Route path="/panel/nuevo" element={<NuevoEvento />} />

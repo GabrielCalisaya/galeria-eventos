@@ -13,6 +13,7 @@ import AjustesEvento from '../componentes/AjustesEvento';
 import { useDialogos } from '../componentes/Dialogos';
 import ElegirPack from '../componentes/ElegirPack';
 import { incluyeExtras } from '../lib/pagos';
+import ProximosPasos from '../componentes/ProximosPasos';
 
 export default function PanelEvento() {
   const { id } = useParams();
@@ -31,6 +32,7 @@ export default function PanelEvento() {
   const [borrandoEvento, setBorrandoEvento] = useState(false);
   const [params, setParams] = useSearchParams();
   const retornoPago = params.get('pago');
+  const [recienPagado, setRecienPagado] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -56,6 +58,7 @@ export default function PanelEvento() {
         clearInterval(t);
         setEvento(ev);
         avisar('¡Pago confirmado! La galería ya está lista.');
+        setRecienPagado(true);
         setParams({}, { replace: true });
       } else if (intentos >= 40) {
         clearInterval(t);
@@ -222,6 +225,7 @@ export default function PanelEvento() {
           )
         ) : (
           <>
+        <ProximosPasos evento={evento} recienPagado={recienPagado} />
         <section className="tarjeta bloque-qr">
           <div className="qr-marco">{qr ? <img src={qr} alt="Código QR para los invitados" className="qr" /> : <div className="qr" />}</div>
           <div className="bloque-qr-texto">

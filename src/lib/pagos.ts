@@ -40,7 +40,7 @@ export async function irAPagar(eventId: string, pack: string) {
 export const INCLUYE: Record<Evento['pack'], string[]> = {
   basico: ['Galería con QR para los invitados', 'Fotos en tiempo real y moderación', 'Descarga de todas las fotos en .zip'],
   experiencia: ['Todo lo del Básico', 'Pantalla del salón en vivo', 'Trivia con ranking', 'Tarjetas de mesa para imprimir'],
-  completo: ['Todo lo de Experiencia', 'Invitación digital personalizada', 'Álbum online por 12 meses'],
+  completo: ['Todo lo de Experiencia', 'Invitación digital Estándar incluida', 'Álbum online por 12 meses'],
 };
 
 export function incluyeExtras(pack: Evento['pack']): boolean {

@@ -75,6 +75,22 @@ export default function Inicio() {
         </ol>
       </section>
 
+      <section className="inicio-combo">
+        <div className="tarjeta">
+          <div>
+            <p className="etiqueta">♡ Combo con invitación</p>
+            <h2>¿También necesitás la invitación?</h2>
+            <p>
+              El pack Completo suma una invitación digital Estándar: una web con los datos del evento, la ubicación y la
+              confirmación de asistencia, con el mismo estilo que tu galería.
+            </p>
+          </div>
+          <a className="boton boton-primario" href="https://invitaciones.newtech.net.ar/#muestras" target="_blank" rel="noreferrer">
+            Ver muestras de invitaciones ↗
+          </a>
+        </div>
+      </section>
+
       <PieNewTech />
     </main>
   );

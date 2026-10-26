@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { formatearPrecio, INCLUYE, irAPagar, usePrecios } from '../lib/pagos';
 import type { Evento } from '../lib/tipos';
 import { useDialogos } from './Dialogos';
+import { MUESTRAS_INVITACIONES } from '../lib/contacto';
 
 type Props = {
   evento: Evento;
@@ -97,6 +98,16 @@ export default function ElegirPack({ evento, modo, estadoRetorno }: Props) {
           );
         })}
       </div>
+
+      {opciones.some((p) => p.pack === 'completo') && (
+        <p className="nota-invitacion">
+          <span aria-hidden="true">♡</span> El pack Completo incluye una <strong>invitación digital Estándar</strong>: una web
+          con los datos del evento, ubicación y confirmación de asistencia. Después del pago te contactamos para armarla.{' '}
+          <a href={MUESTRAS_INVITACIONES} target="_blank" rel="noreferrer">
+            Ver muestras de invitaciones ↗
+          </a>
+        </p>
+      )}
 
       <div className="acciones">
         <button type="button" className="boton boton-primario boton-grande" disabled={yendo} onClick={pagar}>

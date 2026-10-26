@@ -3846,3 +3846,179 @@ button.idea:hover {
   font-size: 0.75rem;
   font-weight: 800;
 }
+
+/* ───────── Acceso ───────── */
+
+.pestanas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin: 0 0 22px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--crema);
+}
+
+.pestanas button {
+  min-height: 42px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--suave);
+  font-weight: 700;
+}
+
+.pestanas button[aria-selected='true'] {
+  background: #fff;
+  color: var(--ciruela);
+  box-shadow: var(--sombra-suave);
+}
+
+.campo-clave {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.campo-clave input {
+  padding-right: 76px !important;
+}
+
+.campo-clave .boton-texto {
+  position: absolute;
+  right: 12px;
+  font-size: 0.85rem;
+}
+
+.boton-ancho {
+  align-self: stretch !important;
+  width: 100%;
+}
+
+.acceso-alternativas {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-top: 18px;
+}
+
+.aviso-enviado {
+  margin-top: 16px;
+  padding: 20px;
+  border-radius: 18px;
+  background: var(--crema);
+  text-align: center;
+}
+
+.aviso-enviado span {
+  font-size: 1.8rem;
+  color: var(--rosa);
+}
+
+.aviso-enviado p {
+  margin: 8px auto 6px !important;
+}
+
+/* ───────── Próximos pasos ───────── */
+
+.proximos {
+  margin: 28px 0 0;
+  padding: 24px;
+}
+
+.proximos.recien {
+  border-color: rgba(79, 122, 82, 0.35);
+  background: linear-gradient(145deg, #fbfdf9, #eef5ea);
+  animation: subir 300ms ease both;
+}
+
+.proximos-ok {
+  margin: 0 0 6px !important;
+  font-weight: 800;
+  color: var(--exito);
+}
+
+.proximos-lista {
+  margin: 8px 0 0;
+  padding-left: 22px;
+}
+
+.proximos-lista li {
+  margin-bottom: 6px;
+}
+
+.proximos-invitacion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+}
+
+.proximos.recien .proximos-invitacion {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(79, 122, 82, 0.25);
+}
+
+.proximos-invitacion > div:first-child {
+  flex: 1 1 320px;
+}
+
+.proximos-texto {
+  margin: 0 !important;
+  color: var(--suave);
+}
+
+.proximos-invitacion .acciones {
+  margin-top: 0;
+}
+
+.nota-invitacion {
+  margin: 16px 0 0 !important;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px dashed var(--rubor);
+  font-size: 0.92rem;
+  max-width: none !important;
+}
+
+.nota-invitacion span {
+  color: var(--rosa);
+}
+
+.nota-invitacion a {
+  font-weight: 700;
+}
+
+.inicio-combo {
+  max-width: 1180px;
+  margin: 20px auto 0;
+  padding: 0 clamp(16px, 4vw, 40px);
+}
+
+.inicio-combo .tarjeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px 28px;
+  padding: 26px 28px;
+  background: linear-gradient(135deg, #fffaf5, #fbe9e6);
+}
+
+.inicio-combo h2 {
+  margin: 0 0 6px;
+  font-family: var(--serif);
+  font-size: clamp(1.7rem, 4vw, 2.3rem);
+  font-weight: 700;
+  color: var(--tinta-fuerte);
+}
+
+.inicio-combo p {
+  margin: 0;
+  max-width: 56ch;
+  color: var(--suave);
+}
