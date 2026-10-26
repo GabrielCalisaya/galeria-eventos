@@ -2,7 +2,17 @@
 
 Los invitados escanean un QR y suben fotos desde el celular, sin descargar nada ni crear cuenta. El anfitrión las ve al instante, las modera y se las lleva todas.
 
-**Estado:** fase Base del MVP (login del anfitrión, creación de eventos con QR, subida de fotos y galería en tiempo real).
+**Incluye:**
+
+- Login del anfitrión con link por email y creación de eventos con QR.
+- Subida de fotos desde el celular, sin app ni registro, con compresión y reintentos.
+- Galería en tiempo real, moderación (ocultar, mostrar y borrar con selección múltiple) y borrado del evento completo.
+- Descarga de todas las fotos en .zip (en partes de 150 fotos).
+- Pantalla del salón con link propio: carrusel de fotos nuevas y QR.
+- Trivia de la pareja en vivo: editor de preguntas, control del anfitrión, juego en el celular y ranking en la pantalla.
+- Tarjetas de mesa con el QR para imprimir o guardar en PDF (4 por hoja A4).
+
+Pendiente: cobro con Mercado Pago.
 
 ## Cómo está armado
 
@@ -10,7 +20,7 @@ Los invitados escanean un QR y suben fotos desde el celular, sin descargar nada 
 | --- | --- | --- |
 | Web (React + Vite, sitio estático) | Hostinger, en un subdominio | Lo que ven invitados y anfitriones |
 | Base de datos, login y tiempo real | Supabase | Eventos, invitados, fotos y reglas de seguridad |
-| Función `sign-upload` | Supabase Edge Functions | Valida y firma cada subida |
+| Funciones `sign-upload` y `borrar` | Supabase Edge Functions | Firman cada subida y borran fotos o eventos de R2 |
 | Fotos y miniaturas | Cloudflare R2 | Almacenamiento sin costo por descargas |
 
 Las fotos se comprimen en el celular y van directo a R2: nunca pasan por Hostinger ni por Supabase.
@@ -109,7 +119,8 @@ Desde ahí, cada cambio que se sube a `main` se publica solo.
 Cada cambio corre en GitHub:
 
 - **Web:** verificación de tipos y compilación.
-- **Base de datos:** aplica la migración en un Postgres de prueba y corre `supabase/tests/reglas.sql`, que comprueba que un invitado no ve fotos de otros eventos, no puede moderar ni crear eventos, y que el anfitrión sí puede.
+- **Base de datos:** aplica las migraciones en un Postgres de prueba y corre `supabase/tests/reglas.sql` (seguridad de fotos, pantalla y trivia: quién ve qué, quién puede moderar y que la respuesta correcta no se filtre antes de tiempo).
+- **Funciones:** verifica los tipos de cada función de Supabase.
 
 ## Desarrollo en tu compu (opcional)
 
