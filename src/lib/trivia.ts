@@ -14,6 +14,8 @@ export type EstadoTrivia = {
   correcta?: number | null;
   conteos?: number[] | null;
   respuestas?: number;
+  jugadores?: number;
+  aciertos?: { nombre: string; ms: number; puntos: number }[] | null;
   ranking?: { nombre: string; puntos: number }[] | null;
   mi_respuesta?: { opcion: number; puntos: number | null } | null;
   yo?: { puntos: number; posicion: number } | null;
@@ -30,26 +32,34 @@ export type PreguntaTrivia = {
 
 export const LETRAS = ['A', 'B', 'C', 'D'];
 
-/** Segundos que quedan de la pregunta, corrigiendo la diferencia de reloj con el servidor. */
-export function useCuentaRegresiva(estado: EstadoTrivia | null): number {
+/**
+ * Segundos que quedan de la pregunta, corrigiendo la diferencia de reloj con el servidor.
+ * Devuelve null mientras no hay una pregunta abierta o todavía no se calculó.
+ */
+export function useCuentaRegresiva(estado: EstadoTrivia | null): number | null {
   const desfase = useRef(0);
-  const [restante, setRestante] = useState(0);
+  const [restante, setRestante] = useState<number | null>(null);
+  const ahora = estado?.ahora;
+  const fase = estado?.fase;
+  const inicio = estado?.inicio;
+  const duracion = estado?.duracion;
+
+  // Diferencia entre el reloj del servidor y el de este dispositivo.
+  useEffect(() => {
+    if (ahora) desfase.current = Date.parse(ahora) - Date.now();
+  }, [ahora]);
 
   useEffect(() => {
-    if (estado?.ahora) desfase.current = Date.parse(estado.ahora) - Date.now();
-  }, [estado?.ahora]);
-
-  useEffect(() => {
-    if (!estado || estado.fase !== 'pregunta' || !estado.inicio || !estado.duracion) {
-      setRestante(0);
+    if (fase !== 'pregunta' || !inicio || !duracion) {
+      setRestante(null);
       return;
     }
-    const fin = Date.parse(estado.inicio) + estado.duracion * 1000;
+    const fin = Date.parse(inicio) + duracion * 1000;
     const calcular = () => setRestante(Math.max(0, Math.ceil((fin - (Date.now() + desfase.current)) / 1000)));
     calcular();
     const t = setInterval(calcular, 250);
     return () => clearInterval(t);
-  }, [estado?.fase, estado?.inicio, estado?.duracion, estado]);
+  }, [fase, inicio, duracion]);
 
   return restante;
 }
@@ -78,7 +88,7 @@ export function useTrivia(eventId: string | undefined) {
         () => void refrescar(),
       )
       .subscribe();
-    const respaldo = setInterval(() => void refrescar(), 6000);
+    const respaldo = setInterval(() => void refrescar(), 4000);
     return () => {
       clearInterval(respaldo);
       void supabase.removeChannel(canal);

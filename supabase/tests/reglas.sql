@@ -153,6 +153,7 @@ select pruebas.afirmar((select (public.trivia_actual(:'ev_id') ->> 'fase') = 'pr
 
 select pruebas.como('00000000-0000-0000-0000-00000000000b', true);
 select pruebas.afirmar((select public.trivia_actual(:'ev_id') ->> 'correcta') is null, 'la respuesta correcta no se ve antes de cerrar');
+select pruebas.afirmar((select public.trivia_actual(:'ev_id') ->> 'aciertos') is null, 'quiénes acertaron no se ve antes de cerrar');
 select pruebas.afirmar((select public.trivia_responder(:'ev_id', 1)), 'Lucía responde');
 select pruebas.afirmar((select not public.trivia_responder(:'ev_id', 0)), 'solo vale la primera respuesta');
 
@@ -171,6 +172,9 @@ select pruebas.afirmar((select (public.trivia_actual(:'ev_id') -> 'mi_respuesta'
 select pruebas.afirmar((select (public.trivia_actual(:'ev_id') -> 'conteos' ->> 0)::int = 1
                            and (public.trivia_actual(:'ev_id') -> 'conteos' ->> 1)::int = 1), 'se cuentan las respuestas por opción');
 select pruebas.afirmar((select (public.trivia_actual(:'ev_id') -> 'ranking' -> 0 ->> 'nombre') = 'Lucía'), 'Lucía va primera');
+select pruebas.afirmar((select json_array_length(public.trivia_actual(:'ev_id') -> 'aciertos') = 1
+                           and (public.trivia_actual(:'ev_id') -> 'aciertos' -> 0 ->> 'nombre') = 'Lucía'),
+                       'la lista de quiénes acertaron muestra solo a Lucía');
 select pruebas.debe_fallar(format('select public.trivia_responder(%L, 1)', :'ev_id'), 'no se responde con la pregunta cerrada');
 
 select pruebas.como('00000000-0000-0000-0000-00000000000c', true);

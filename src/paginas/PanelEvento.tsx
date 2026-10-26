@@ -10,10 +10,12 @@ import EncabezadoPanel from '../componentes/EncabezadoPanel';
 import Galeria from '../componentes/Galeria';
 import DescargaZip from '../componentes/DescargaZip';
 import AjustesEvento from '../componentes/AjustesEvento';
+import { useDialogos } from '../componentes/Dialogos';
 
 export default function PanelEvento() {
   const { id } = useParams();
   const navegar = useNavigate();
+  const { confirmar, avisar } = useDialogos();
   const [evento, setEvento] = useState<Evento | null | undefined>(undefined);
   const [qr, setQr] = useState('');
   const [copiado, setCopiado] = useState<'' | 'invitados' | 'pantalla'>('');
@@ -24,7 +26,6 @@ export default function PanelEvento() {
   const [trabajando, setTrabajando] = useState('');
   const [error, setError] = useState('');
 
-  const [confirmarBorrado, setConfirmarBorrado] = useState(false);
   const [borrandoEvento, setBorrandoEvento] = useState(false);
 
   useEffect(() => {
@@ -90,21 +91,26 @@ export default function PanelEvento() {
       return;
     }
     fotos.filter((f) => seleccion.has(f.id)).forEach((f) => reemplazar({ ...f, oculta }));
+    avisar(oculta ? `${ids.length} ocultas para los invitados` : `${ids.length} visibles otra vez`);
     salirDeSeleccion();
   }
 
   async function borrarSeleccion() {
     if (!id || seleccion.size === 0) return;
     const n = seleccion.size;
-    const ok = window.confirm(
-      `¿Borrar ${n} ${n === 1 ? 'foto' : 'fotos'} para siempre?\n\nSe eliminan del álbum y de la descarga, y no se pueden recuperar.`,
-    );
+    const ok = await confirmar({
+      titulo: `Borrar ${n} ${n === 1 ? 'foto' : 'fotos'}`,
+      mensaje: <p>Se eliminan del álbum, de la pantalla y de la descarga. No se pueden recuperar.</p>,
+      aceptar: 'Borrar para siempre',
+      peligro: true,
+    });
     if (!ok) return;
     setError('');
     setTrabajando(`Borrando 0 de ${n}…`);
     try {
       await borrarFotos(id, [...seleccion], (hechas) => setTrabajando(`Borrando ${hechas} de ${n}…`));
       salirDeSeleccion();
+      avisar(n === 1 ? 'Foto borrada' : `${n} fotos borradas`);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -113,7 +119,22 @@ export default function PanelEvento() {
   }
 
   async function borrarTodo() {
-    if (!id) return;
+    if (!id || !evento) return;
+    const ok = await confirmar({
+      titulo: 'Borrar este evento',
+      mensaje: (
+        <>
+          <p>
+            Se borran “{evento.titulo}” y {fotos.length === 1 ? 'su foto' : `sus ${fotos.length}${hayMas ? '+' : ''} fotos`} para
+            siempre. El QR deja de funcionar.
+          </p>
+          <p>Si querés guardar las fotos, descargalas antes.</p>
+        </>
+      ),
+      aceptar: 'Borrar todo',
+      peligro: true,
+    });
+    if (!ok) return;
     setBorrandoEvento(true);
     setError('');
     try {
@@ -291,32 +312,11 @@ export default function PanelEvento() {
         <div className="panel-columna">
           <section className="zona-peligro">
             <h2>Borrar evento</h2>
-            {!confirmarBorrado ? (
-              <>
-                <p>Elimina el evento, el QR deja de funcionar y se borran todas las fotos para siempre.</p>
-                <button type="button" className="boton boton-peligro-borde" onClick={() => setConfirmarBorrado(true)}>
-                  Borrar este evento
-                </button>
-              </>
-            ) : (
-              <div className="confirmacion" role="alert">
-                <p>
-                  <strong>
-                    ¿Seguro? Se borran {fotos.length === 1 ? 'la foto' : `las ${fotos.length}${hayMas ? '+' : ''} fotos`} de “{evento.titulo}” y no se pueden recuperar.
-                  </strong>{' '}
-                  Si las querés guardar, descargalas antes.
-                </p>
-                <div className="acciones">
-                  <button type="button" className="boton boton-peligro" disabled={borrandoEvento} onClick={borrarTodo}>
-                    {borrandoEvento ? 'Borrando…' : 'Sí, borrar todo'}
-                  </button>
-                  <button type="button" className="boton" disabled={borrandoEvento} onClick={() => setConfirmarBorrado(false)}>
-                    Cancelar
-                  </button>
-                </div>
-                {error && <p className="error">{error}</p>}
-              </div>
-            )}
+            <p>Elimina el evento, el QR deja de funcionar y se borran todas las fotos para siempre.</p>
+            <button type="button" className="boton boton-peligro-borde" disabled={borrandoEvento} onClick={borrarTodo}>
+              {borrandoEvento ? 'Borrando el evento…' : 'Borrar este evento'}
+            </button>
+            {error && <p className="error">{error}</p>}
           </section>
         </div>
       )}
