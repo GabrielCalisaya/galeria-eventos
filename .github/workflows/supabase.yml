@@ -54,6 +54,21 @@ jobs:
             R2_BUCKET="${{ secrets.R2_BUCKET }}" \
             ALLOWED_ORIGIN="${{ secrets.ALLOWED_ORIGIN }}"
 
+      - name: Cargar claves de Mercado Pago (si están)
+        if: steps.chequeo.outputs.listo == 'si'
+        env:
+          MP_ACCESS_TOKEN: ${{ secrets.MP_ACCESS_TOKEN }}
+          MP_WEBHOOK_SECRET: ${{ secrets.MP_WEBHOOK_SECRET }}
+        run: |
+          args=()
+          [ -n "$MP_ACCESS_TOKEN" ] && args+=("MP_ACCESS_TOKEN=$MP_ACCESS_TOKEN")
+          [ -n "$MP_WEBHOOK_SECRET" ] && args+=("MP_WEBHOOK_SECRET=$MP_WEBHOOK_SECRET")
+          if [ ${#args[@]} -gt 0 ]; then
+            supabase secrets set --project-ref "$SUPABASE_PROJECT_REF" "${args[@]}"
+          else
+            echo "Sin claves de Mercado Pago todavía."
+          fi
+
       - name: Desplegar funciones
         if: steps.chequeo.outputs.listo == 'si'
         run: |

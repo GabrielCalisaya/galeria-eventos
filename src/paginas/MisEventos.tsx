@@ -56,6 +56,7 @@ export default function MisEventos() {
                     <span className="etiqueta">{NOMBRES_TIPO[ev.tipo]}</span>
                     <span className="evento-titulo">{ev.titulo}</span>
                     <span className="evento-meta">{ev.fecha ? formatearFecha(ev.fecha) : 'Sin fecha'}</span>
+                    {ev.estado === 'borrador' && <span className="insignia-borrador">Falta activar</span>}
                   </span>
                   <span className="evento-flecha" aria-hidden="true">
                     ↗

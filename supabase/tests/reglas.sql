@@ -49,6 +49,23 @@ insert into public.events (owner_id, slug, titulo) values
 returning id \gset ev_
 select pruebas.afirmar((select count(*) = 1 from public.event_members where event_id = :'ev_id'), 'el creador queda como anfitrión');
 select pruebas.afirmar((select count(*) = 1 from public.events), 'el anfitrión ve su evento');
+select pruebas.afirmar((select estado = 'borrador' and pack = 'basico' from public.events where id = :'ev_id'),
+                       'un evento nuevo nace en borrador, sin pagar');
+update public.events set estado = 'activo', pack = 'completo' where id = :'ev_id';
+select pruebas.afirmar((select estado = 'borrador' from public.events where id = :'ev_id'),
+                       'el anfitrión no puede activarse el evento sin pagar');
+select pruebas.afirmar((select count(*) = 0 from public.evento_publico('pruebaSlug123')),
+                       'un evento en borrador no se abre para invitados');
+
+-- El pago lo confirma el servidor (service_role): se simula acá.
+reset role;
+set role service_role;
+update public.events set estado = 'activo', pack = 'completo' where id = :'ev_id';
+reset role;
+select pruebas.como('00000000-0000-0000-0000-00000000000a', false);
+set role authenticated;
+select pruebas.afirmar((select estado = 'activo' and pack = 'completo' from public.events where id = :'ev_id'),
+                       'después del pago el evento queda activo');
 
 -- 2. Un invitado anónimo no puede crear eventos.
 select pruebas.como('00000000-0000-0000-0000-00000000000b', true);
@@ -233,6 +250,33 @@ select pruebas.afirmar((select count(*) = 1 from public.pantalla_bajas(:'tok', n
 select pruebas.afirmar((select count(*) = 0 from public.pantalla_bajas('link-inventado', now() - interval '1 hour')),
                        'un link inventado no recibe avisos');
 select pruebas.debe_rechazar('select count(*) from public.media_bajas', 'anon no lee la tabla de avisos');
+
+-- 16. Pagos y packs.
+reset role;
+set role anon;
+select pruebas.afirmar((select count(*) = 3 from public.precios_pack), 'los precios de los packs son públicos');
+select pruebas.debe_rechazar('select count(*) from public.pagos', 'anon no ve pagos');
+
+reset role;
+insert into public.pagos (event_id, user_id, pack, monto) values
+  (:'ev_id', '00000000-0000-0000-0000-00000000000a', 'completo', 65000);
+set role authenticated;
+select pruebas.como('00000000-0000-0000-0000-00000000000a', false);
+select pruebas.afirmar((select count(*) = 1 from public.pagos), 'el anfitrión ve sus pagos');
+select pruebas.como('00000000-0000-0000-0000-00000000000b', true);
+select pruebas.afirmar((select count(*) = 0 from public.pagos), 'un invitado no ve los pagos');
+
+-- Un evento Básico no tiene pantalla ni trivia.
+reset role;
+set role service_role;
+update public.events set pack = 'basico' where id = :'ev_id';
+reset role;
+set role anon;
+select pruebas.afirmar((select count(*) = 0 from public.pantalla_evento(:'tok')), 'el pack Básico no incluye la pantalla del salón');
+reset role;
+select pruebas.como('00000000-0000-0000-0000-00000000000a', false);
+set role authenticated;
+select pruebas.debe_fallar(format('select public.trivia_control(%L, %L)', :'ev_id', 'iniciar'), 'el pack Básico no incluye la trivia');
 
 reset role;
 \echo 'Todas las pruebas de reglas pasaron.'

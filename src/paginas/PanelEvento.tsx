@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import QRCode from 'qrcode';
 import { supabase } from '../lib/supabase';
 import { useFotos } from '../lib/fotos';
@@ -11,6 +11,8 @@ import Galeria from '../componentes/Galeria';
 import DescargaZip from '../componentes/DescargaZip';
 import AjustesEvento from '../componentes/AjustesEvento';
 import { useDialogos } from '../componentes/Dialogos';
+import ElegirPack from '../componentes/ElegirPack';
+import { incluyeExtras } from '../lib/pagos';
 
 export default function PanelEvento() {
   const { id } = useParams();
@@ -27,6 +29,8 @@ export default function PanelEvento() {
   const [error, setError] = useState('');
 
   const [borrandoEvento, setBorrandoEvento] = useState(false);
+  const [params, setParams] = useSearchParams();
+  const retornoPago = params.get('pago');
 
   useEffect(() => {
     if (!id) return;
@@ -37,6 +41,30 @@ export default function PanelEvento() {
       .maybeSingle()
       .then(({ data }) => setEvento((data as Evento | null) ?? null));
   }, [id]);
+
+  // Al volver de Mercado Pago, se espera la confirmación del pago (llega por aviso del servidor).
+  const packAntes = useRef<string | null>(null);
+  useEffect(() => {
+    if (!id || retornoPago !== 'aprobado' || !evento) return;
+    if (packAntes.current === null) packAntes.current = `${evento.estado}-${evento.pack}`;
+    let intentos = 0;
+    const t = setInterval(async () => {
+      intentos++;
+      const { data } = await supabase.from('events').select('*').eq('id', id).maybeSingle();
+      const ev = data as Evento | null;
+      if (ev && `${ev.estado}-${ev.pack}` !== packAntes.current) {
+        clearInterval(t);
+        setEvento(ev);
+        avisar('¡Pago confirmado! La galería ya está lista.');
+        setParams({}, { replace: true });
+      } else if (intentos >= 40) {
+        clearInterval(t);
+        setParams({ pago: 'pendiente' }, { replace: true });
+      }
+    }, 3000);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, retornoPago, evento?.id]);
 
   useEffect(() => {
     if (!evento) return;
@@ -182,16 +210,30 @@ export default function PanelEvento() {
         <h1>{evento.titulo}</h1>
         {evento.fecha && <p className="evento-meta">{formatearFecha(evento.fecha)}</p>}
 
+        {evento.estado === 'borrador' ? (
+          retornoPago === 'aprobado' ? (
+            <section className="tarjeta activar confirmando" aria-live="polite">
+              <span className="girando" aria-hidden="true" />
+              <h2>Confirmando tu pago…</h2>
+              <p className="ayuda">Mercado Pago nos avisa en unos segundos. No cierres esta página.</p>
+            </section>
+          ) : (
+            <ElegirPack evento={evento} modo="activar" estadoRetorno={retornoPago} />
+          )
+        ) : (
+          <>
         <section className="tarjeta bloque-qr">
           <div className="qr-marco">{qr ? <img src={qr} alt="Código QR para los invitados" className="qr" /> : <div className="qr" />}</div>
           <div className="bloque-qr-texto">
             <h2>QR para los invitados</h2>
             <p>Lo escanean con la cámara del celular y entran directo a subir fotos, sin descargar nada.</p>
             <div className="acciones">
-              <Link className="boton boton-primario" to={`/panel/${evento.id}/tarjetas`}>
-                Imprimir tarjetas de mesa
-              </Link>
-              <a className="boton" href={qr} download={`qr-${evento.slug}.png`}>
+              {incluyeExtras(evento.pack) && (
+                <Link className="boton boton-primario" to={`/panel/${evento.id}/tarjetas`}>
+                  Imprimir tarjetas de mesa
+                </Link>
+              )}
+              <a className={incluyeExtras(evento.pack) ? 'boton' : 'boton boton-primario'} href={qr} download={`qr-${evento.slug}.png`}>
                 Descargar QR
               </a>
               <button type="button" className="boton" onClick={() => copiar('invitados')}>
@@ -201,6 +243,7 @@ export default function PanelEvento() {
           </div>
         </section>
 
+        {incluyeExtras(evento.pack) ? (
         <div className="herramientas">
           <section className="tarjeta herramienta">
             <span className="herramienta-icono" aria-hidden="true">✦</span>
@@ -228,9 +271,16 @@ export default function PanelEvento() {
             </div>
           </section>
         </div>
+        ) : (
+          <ElegirPack evento={evento} modo="mejorar" estadoRetorno={retornoPago} />
+        )}
+
+          </>
+        )}
 
         <AjustesEvento evento={evento} onGuardado={setEvento} />
 
+        {evento.estado !== 'borrador' && (
         <section className="seccion-fotos">
           <div className="fila-titulo">
             <div>
@@ -257,6 +307,7 @@ export default function PanelEvento() {
             </div>
           )}
         </section>
+        )}
       </div>
 
       {fotos.length > 0 && (
