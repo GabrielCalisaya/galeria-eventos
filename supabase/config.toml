@@ -1,0 +1,6 @@
+# Configuración mínima para la CLI de Supabase (la usa el despliegue automático).
+project_id = "galeria-eventos"
+
+[functions.sign-upload]
+# La función valida la sesión por su cuenta (incluye sesiones anónimas de invitados).
+verify_jwt = true

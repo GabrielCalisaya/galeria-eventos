@@ -1,0 +1,59 @@
+name: Supabase
+
+# Aplica la base de datos y despliega la función de subida en Supabase.
+# Corre al cambiar algo dentro de supabase/ en main, o a mano desde la pestaña Actions.
+# Si los secretos de Supabase no están cargados, no hace nada.
+
+on:
+  push:
+    branches: [main]
+    paths: ['supabase/**']
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+    steps:
+      - name: Revisar secretos
+        id: chequeo
+        run: |
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ] || [ -z "$SUPABASE_PROJECT_REF" ] || [ -z "$SUPABASE_DB_PASSWORD" ]; then
+            echo "Faltan secretos de Supabase; se omite el despliegue."
+            echo "listo=no" >> "$GITHUB_OUTPUT"
+          else
+            echo "listo=si" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.chequeo.outputs.listo == 'si'
+
+      - uses: supabase/setup-cli@v1
+        if: steps.chequeo.outputs.listo == 'si'
+        with:
+          version: latest
+
+      - name: Vincular proyecto
+        if: steps.chequeo.outputs.listo == 'si'
+        run: supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Aplicar base de datos
+        if: steps.chequeo.outputs.listo == 'si'
+        run: supabase db push --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Cargar claves de R2 en la función
+        if: steps.chequeo.outputs.listo == 'si'
+        run: |
+          supabase secrets set --project-ref "$SUPABASE_PROJECT_REF" \
+            R2_ACCOUNT_ID="${{ secrets.R2_ACCOUNT_ID }}" \
+            R2_ACCESS_KEY_ID="${{ secrets.R2_ACCESS_KEY_ID }}" \
+            R2_SECRET_ACCESS_KEY="${{ secrets.R2_SECRET_ACCESS_KEY }}" \
+            R2_BUCKET="${{ secrets.R2_BUCKET }}" \
+            ALLOWED_ORIGIN="${{ secrets.ALLOWED_ORIGIN }}"
+
+      - name: Desplegar función de subida
+        if: steps.chequeo.outputs.listo == 'si'
+        run: supabase functions deploy sign-upload --project-ref "$SUPABASE_PROJECT_REF"

@@ -1,0 +1,44 @@
+name: Base de datos
+
+# Aplica la migración en un Postgres de prueba y corre las pruebas de reglas de seguridad.
+
+on:
+  push:
+    paths: ['supabase/**', '.github/workflows/db.yml']
+  pull_request:
+    paths: ['supabase/**']
+  workflow_dispatch:
+
+jobs:
+  probar:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - name: Preparar imitación de Supabase
+        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/stub_supabase.sql
+      - name: Aplicar migraciones
+        run: for f in supabase/migrations/*.sql; do echo "== $f"; psql -v ON_ERROR_STOP=1 -f "$f"; done
+      - name: Probar reglas de seguridad
+        run: |
+          set +e
+          psql -v ON_ERROR_STOP=1 -f supabase/tests/reglas.sql > resultado.txt 2>&1
+          estado=$?
+          cat resultado.txt
+          grep -E "ERROR|FALLÓ" resultado.txt | sed 's/^/::error::/'
+          exit $estado
