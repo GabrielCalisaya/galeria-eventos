@@ -30,6 +30,15 @@ exception when insufficient_privilege then
   raise notice 'ok: %', p_msg;
 end $$;
 
+create or replace function pruebas.debe_fallar(p_sql text, p_msg text) returns void language plpgsql as $$
+begin
+  execute p_sql;
+  raise exception 'FALLÓ: %', p_msg;
+exception when others then
+  if sqlerrm like 'FALLÓ:%' then raise; end if;
+  raise notice 'ok: %', p_msg;
+end $$;
+
 grant execute on all functions in schema pruebas to authenticated, anon;
 
 -- 1. El anfitrión crea un evento y queda como miembro.
@@ -110,6 +119,78 @@ reset role;
 set role anon;
 select pruebas.debe_rechazar('select count(*) from public.media', 'anon no lee fotos');
 select pruebas.debe_rechazar('select count(*) from public.events', 'anon no lee eventos');
+
+-- 12. Pantalla del salón: por su link secreto, sin sesión.
+reset role;
+select pantalla_token as tok from public.events where id = :'ev_id' \gset
+set role anon;
+select pruebas.afirmar((select count(*) = 1 from public.pantalla_evento(:'tok')), 'la pantalla encuentra el evento por su link');
+select pruebas.afirmar((select count(*) = 3 from public.pantalla_fotos(:'tok')), 'la pantalla ve las fotos listas y visibles');
+select pruebas.afirmar((select count(*) = 0 from public.pantalla_evento('link-inventado')), 'un link inventado no muestra nada');
+select pruebas.afirmar((select count(*) = 0 from public.pantalla_fotos(:'tok', now() + interval '1 hour')), 'pantalla_fotos filtra por fecha');
+
+-- 13. Trivia: el anfitrión carga preguntas; los invitados no las ven.
+reset role;
+select pruebas.como('00000000-0000-0000-0000-00000000000a', false);
+set role authenticated;
+insert into public.trivia_preguntas (event_id, orden, texto, opciones, correcta) values
+  (:'ev_id', 1, '¿Dónde se conocieron?', array['Facultad', 'Trabajo', 'Fiesta'], 1),
+  (:'ev_id', 2, '¿Quién cocina?', array['Él', 'Ella'], 0);
+select pruebas.afirmar((select count(*) = 2 from public.trivia_preguntas), 'el anfitrión carga preguntas');
+select pruebas.debe_fallar(
+  format('insert into public.trivia_preguntas (event_id, texto, opciones, correcta) values (%L, %L, %L, 5)',
+         :'ev_id', 'Mala', '{A,B}'),
+  'la respuesta correcta tiene que ser una de las opciones');
+
+select pruebas.como('00000000-0000-0000-0000-00000000000b', true);
+select pruebas.afirmar((select count(*) = 0 from public.trivia_preguntas), 'un invitado no ve las preguntas ni la respuesta');
+select pruebas.debe_rechazar(format('select public.trivia_control(%L, %L)', :'ev_id', 'iniciar'), 'un invitado no maneja la trivia');
+
+-- 14. Una ronda completa.
+select pruebas.como('00000000-0000-0000-0000-00000000000a', false);
+select public.trivia_control(:'ev_id', 'iniciar', 20);
+select pruebas.afirmar((select (public.trivia_actual(:'ev_id') ->> 'fase') = 'pregunta'), 'la trivia arranca con la primera pregunta');
+
+select pruebas.como('00000000-0000-0000-0000-00000000000b', true);
+select pruebas.afirmar((select public.trivia_actual(:'ev_id') ->> 'correcta') is null, 'la respuesta correcta no se ve antes de cerrar');
+select pruebas.afirmar((select public.trivia_responder(:'ev_id', 1)), 'Lucía responde');
+select pruebas.afirmar((select not public.trivia_responder(:'ev_id', 0)), 'solo vale la primera respuesta');
+
+select pruebas.como('00000000-0000-0000-0000-00000000000c', true);
+select pruebas.afirmar((select public.trivia_responder(:'ev_id', 0)), 'Tomás responde');
+
+select pruebas.como('00000000-0000-0000-0000-00000000000d', true);
+select pruebas.debe_rechazar(format('select public.trivia_responder(%L, 1)', :'ev_id'), 'alguien que no entró a la galería no juega');
+
+select pruebas.como('00000000-0000-0000-0000-00000000000a', false);
+select public.trivia_control(:'ev_id', 'cerrar');
+
+select pruebas.como('00000000-0000-0000-0000-00000000000b', true);
+select pruebas.afirmar((select (public.trivia_actual(:'ev_id') ->> 'correcta') = '1'), 'al cerrar se revela la correcta');
+select pruebas.afirmar((select (public.trivia_actual(:'ev_id') -> 'mi_respuesta' ->> 'puntos')::int > 500), 'acertar rápido da más de 500 puntos');
+select pruebas.afirmar((select (public.trivia_actual(:'ev_id') -> 'conteos' ->> 0)::int = 1
+                           and (public.trivia_actual(:'ev_id') -> 'conteos' ->> 1)::int = 1), 'se cuentan las respuestas por opción');
+select pruebas.afirmar((select (public.trivia_actual(:'ev_id') -> 'ranking' -> 0 ->> 'nombre') = 'Lucía'), 'Lucía va primera');
+select pruebas.debe_fallar(format('select public.trivia_responder(%L, 1)', :'ev_id'), 'no se responde con la pregunta cerrada');
+
+select pruebas.como('00000000-0000-0000-0000-00000000000c', true);
+select pruebas.afirmar((select (public.trivia_actual(:'ev_id') -> 'mi_respuesta' ->> 'puntos')::int = 0), 'errar da 0 puntos');
+select pruebas.afirmar((select (public.trivia_actual(:'ev_id') -> 'yo' ->> 'posicion')::int = 2), 'Tomás ve que va segundo');
+
+reset role;
+set role anon;
+select pruebas.afirmar((select (public.trivia_pantalla(:'tok') ->> 'fase') = 'resultado'), 'la pantalla ve el resultado');
+
+reset role;
+select pruebas.como('00000000-0000-0000-0000-00000000000a', false);
+set role authenticated;
+select public.trivia_control(:'ev_id', 'siguiente');
+select pruebas.afirmar((select (public.trivia_actual(:'ev_id') ->> 'numero') = '2'), 'pasa a la segunda pregunta');
+select public.trivia_control(:'ev_id', 'cerrar');
+select public.trivia_control(:'ev_id', 'siguiente');
+select pruebas.afirmar((select (public.trivia_actual(:'ev_id') ->> 'fase') = 'fin'), 'después de la última, termina');
+select public.trivia_control(:'ev_id', 'terminar');
+select pruebas.afirmar((select (public.trivia_actual(:'ev_id') ->> 'fase') = 'espera'), 'se puede volver a la espera');
 
 reset role;
 \echo 'Todas las pruebas de reglas pasaron.'

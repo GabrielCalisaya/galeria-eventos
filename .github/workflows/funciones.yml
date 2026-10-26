@@ -20,11 +20,16 @@ jobs:
       - name: Verificar tipos
         run: |
           set +e
-          cd supabase/functions/sign-upload
-          deno check index.ts > resultado.txt 2>&1
-          estado=$?
-          cat resultado.txt
-          if [ $estado -ne 0 ]; then
-            sed 's/\x1b\[[0-9;]*m//g' resultado.txt | grep -vE '^\s*$' | head -30 | while IFS= read -r l; do echo "::error::$l"; done
-          fi
-          exit $estado
+          fallo=0
+          for dir in supabase/functions/*/; do
+            nombre=$(basename "$dir")
+            [ "$nombre" = "_shared" ] && continue
+            (cd "$dir" && deno check index.ts) > resultado.txt 2>&1
+            estado=$?
+            echo "== $nombre"; cat resultado.txt
+            if [ $estado -ne 0 ]; then
+              fallo=1
+              sed 's/\x1b\[[0-9;]*m//g' resultado.txt | grep -vE '^\s*$' | head -30 | while IFS= read -r l; do echo "::error::$nombre: $l"; done
+            fi
+          done
+          exit $fallo

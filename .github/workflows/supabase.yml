@@ -54,6 +54,12 @@ jobs:
             R2_BUCKET="${{ secrets.R2_BUCKET }}" \
             ALLOWED_ORIGIN="${{ secrets.ALLOWED_ORIGIN }}"
 
-      - name: Desplegar función de subida
+      - name: Desplegar funciones
         if: steps.chequeo.outputs.listo == 'si'
-        run: supabase functions deploy sign-upload --no-verify-jwt --project-ref "$SUPABASE_PROJECT_REF"
+        run: |
+          for dir in supabase/functions/*/; do
+            nombre=$(basename "$dir")
+            [ "$nombre" = "_shared" ] && continue
+            echo "== $nombre"
+            supabase functions deploy "$nombre" --no-verify-jwt --project-ref "$SUPABASE_PROJECT_REF"
+          done
