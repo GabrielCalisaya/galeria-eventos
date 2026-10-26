@@ -192,5 +192,43 @@ select pruebas.afirmar((select (public.trivia_actual(:'ev_id') ->> 'fase') = 'fi
 select public.trivia_control(:'ev_id', 'terminar');
 select pruebas.afirmar((select (public.trivia_actual(:'ev_id') ->> 'fase') = 'espera'), 'se puede volver a la espera');
 
+-- 15. Bajas en vivo: ocultar o borrar una foto les avisa a los invitados y a la pantalla.
+reset role;
+select pruebas.como('00000000-0000-0000-0000-00000000000a', false);
+set role authenticated;
+update public.media set oculta = true where id = '10000000-0000-0000-0000-000000000001';
+
+select pruebas.como('00000000-0000-0000-0000-00000000000c', true);
+select pruebas.afirmar((select count(*) = 1 from public.media_bajas
+                        where media_id = '10000000-0000-0000-0000-000000000001' and motivo = 'oculta'),
+                       'el invitado se entera de que una foto se ocultó');
+select pruebas.afirmar((select count(*) = 0 from public.media where id = '10000000-0000-0000-0000-000000000001'),
+                       'el invitado ya no ve la foto oculta');
+
+select pruebas.como('00000000-0000-0000-0000-00000000000a', false);
+update public.media set oculta = false where id = '10000000-0000-0000-0000-000000000001';
+select pruebas.como('00000000-0000-0000-0000-00000000000c', true);
+select pruebas.afirmar((select count(*) = 0 from public.media_bajas where media_id = '10000000-0000-0000-0000-000000000001'),
+                       'al volver a mostrarla se quita el aviso');
+
+reset role;
+delete from public.media where id = '10000000-0000-0000-0000-000000000002';
+set role authenticated;
+select pruebas.como('00000000-0000-0000-0000-00000000000c', true);
+select pruebas.afirmar((select count(*) = 1 from public.media_bajas
+                        where media_id = '10000000-0000-0000-0000-000000000002' and motivo = 'borrada'),
+                       'el invitado se entera de que una foto se borró');
+
+select pruebas.como('00000000-0000-0000-0000-00000000000d', true);
+select pruebas.afirmar((select count(*) = 0 from public.media_bajas), 'un extraño no ve los avisos de otro evento');
+
+reset role;
+set role anon;
+select pruebas.afirmar((select count(*) = 1 from public.pantalla_bajas(:'tok', now() - interval '1 hour')),
+                       'la pantalla recibe la foto borrada');
+select pruebas.afirmar((select count(*) = 0 from public.pantalla_bajas('link-inventado', now() - interval '1 hour')),
+                       'un link inventado no recibe avisos');
+select pruebas.debe_rechazar('select count(*) from public.media_bajas', 'anon no lee la tabla de avisos');
+
 reset role;
 \echo 'Todas las pruebas de reglas pasaron.'

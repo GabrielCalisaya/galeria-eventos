@@ -1912,7 +1912,7 @@ a {
   inset: 0;
   display: grid;
   place-items: center;
-  animation: aparecer 900ms ease both;
+  animation: aparecer 500ms ease both;
 }
 
 @keyframes aparecer {

@@ -58,8 +58,21 @@ export function useFotos(eventId: string | undefined, conOcultas = false) {
             if (cambio.eventType === 'DELETE' || !nueva || !visible(nueva)) return sin;
             const existia = prev.some((f) => f.id === nueva.id);
             if (existia) return prev.map((f) => (f.id === nueva.id ? nueva : f));
-            return [nueva, ...sin];
+            // Una foto que vuelve a mostrarse se ubica en su lugar por fecha.
+            return [...sin, nueva].sort((a, b) => b.created_at.localeCompare(a.created_at));
           });
+        },
+      )
+      // Fotos ocultadas o borradas: el aviso llega aunque ya no se tenga permiso para ver la foto.
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'media_bajas', filter: `event_id=eq.${eventId}` },
+        (cambio) => {
+          const baja = cambio.new as { media_id?: string; motivo?: string } | undefined;
+          if (!baja?.media_id) return;
+          // En la moderación las ocultas se siguen mostrando (en gris).
+          if (conOcultas && baja.motivo === 'oculta') return;
+          setFotos((prev) => prev.filter((f) => f.id !== baja.media_id));
         },
       )
       .subscribe();

@@ -11,8 +11,9 @@ import TriviaPantalla from '../componentes/TriviaPantalla';
 type EventoPantalla = { id: string; slug: string; titulo: string; fecha: string | null; estilo: EstiloEvento };
 type FotoPantalla = { id: string; key_original: string; key_thumb: string; autor_nombre: string; created_at: string };
 
-const SEGUNDOS_POR_FOTO = 7;
-const CONSULTA_CADA_MS = 5000;
+const SEGUNDOS_POR_FOTO = 4;
+const CONSULTA_CADA_MS = 3000;
+const RECARGA_COMPLETA_MS = 60_000; // rearma la lista entera (por ejemplo, fotos que se vuelven a mostrar)
 
 export default function Pantalla() {
   const { token = '' } = useParams();
@@ -26,7 +27,10 @@ export default function Pantalla() {
   const todas = useRef<FotoPantalla[]>([]);
   const nuevas = useRef<FotoPantalla[]>([]);
   const ultimaFecha = useRef<string | null>(null);
+  const ultimaBaja = useRef('1970-01-01T00:00:00Z');
   const vistas = useRef<string[]>([]);
+  const actualRef = useRef<FotoPantalla | null>(null);
+  const avanzar = useRef<() => void>(() => undefined);
 
   // Datos del evento y QR.
   useEffect(() => {
@@ -64,12 +68,51 @@ export default function Pantalla() {
     });
   }, [token]);
 
+  // Fotos ocultadas o borradas: salen de la lista y, si es la que se está mostrando, se pasa a otra.
+  const consultarBajas = useCallback(async () => {
+    const { data, error } = await supabase.rpc('pantalla_bajas', { p_token: token, p_desde: ultimaBaja.current });
+    if (error || !data || data.length === 0) return;
+    const bajas = data as { media_id: string; created_at: string }[];
+    ultimaBaja.current = bajas[bajas.length - 1].created_at;
+    const ids = new Set(bajas.map((b) => b.media_id));
+    todas.current = todas.current.filter((f) => !ids.has(f.id));
+    nuevas.current = nuevas.current.filter((f) => !ids.has(f.id));
+    setTotal(todas.current.length);
+    if (actualRef.current && ids.has(actualRef.current.id)) {
+      if (todas.current.length > 0) {
+        avanzar.current();
+      } else {
+        actualRef.current = null;
+        setActual(null);
+      }
+    }
+  }, [token]);
+
+  const recargarTodo = useCallback(async () => {
+    const { data, error } = await supabase.rpc('pantalla_fotos', { p_token: token, p_desde: null });
+    if (error || !data) return;
+    const lista = data as FotoPantalla[];
+    const vigentes = new Set(lista.map((f) => f.id));
+    todas.current = lista;
+    nuevas.current = nuevas.current.filter((f) => vigentes.has(f.id));
+    if (lista[0]) ultimaFecha.current = lista[0].created_at;
+    setTotal(lista.length);
+  }, [token]);
+
   useEffect(() => {
     if (!evento) return;
     void consultar();
-    const t = setInterval(consultar, CONSULTA_CADA_MS);
-    return () => clearInterval(t);
-  }, [evento, consultar]);
+    void consultarBajas();
+    const t = setInterval(() => {
+      void consultar();
+      void consultarBajas();
+    }, CONSULTA_CADA_MS);
+    const r = setInterval(() => void recargarTodo(), RECARGA_COMPLETA_MS);
+    return () => {
+      clearInterval(t);
+      clearInterval(r);
+    };
+  }, [evento, consultar, consultarBajas, recargarTodo]);
 
   // Carrusel: las nuevas tienen prioridad; si no hay, una al azar evitando repetir seguido.
   useEffect(() => {
@@ -84,13 +127,20 @@ export default function Pantalla() {
       }
       if (foto) {
         vistas.current.push(foto.id);
+        actualRef.current = foto;
         setActual(foto);
         const proxima = nuevas.current[0] ?? todas.current[Math.floor(Math.random() * todas.current.length)];
         if (proxima) new Image().src = urlPublica(proxima.key_original);
       }
     };
+    let t = window.setInterval(siguiente, SEGUNDOS_POR_FOTO * 1000);
+    // Avanzar a mano (por ejemplo, al borrar la foto en pantalla) reinicia el turno.
+    avanzar.current = () => {
+      clearInterval(t);
+      siguiente();
+      t = window.setInterval(siguiente, SEGUNDOS_POR_FOTO * 1000);
+    };
     siguiente();
-    const t = setInterval(siguiente, SEGUNDOS_POR_FOTO * 1000);
     return () => clearInterval(t);
   }, [evento]);
 
@@ -99,6 +149,7 @@ export default function Pantalla() {
     if (!actual && total > 0) {
       const primera = nuevas.current.shift() ?? todas.current[0];
       vistas.current.push(primera.id);
+      actualRef.current = primera;
       setActual(primera);
     }
   }, [total, actual]);
