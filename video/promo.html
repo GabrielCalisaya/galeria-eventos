@@ -70,7 +70,7 @@
   .ranking span { color: var(--suave); font-weight: 600; }
 
   /* Escena 7: beneficios */
-  .beneficio { display: flex; align-items: center; gap: 34px; height: 150px; font-size: 56px; font-weight: 700; color: #fff; }
+  .beneficio { display: flex; align-items: center; gap: 30px; height: 150px; font-size: 50px; font-weight: 700; color: #fff; }
   .tilde { display: grid; place-items: center; width: 92px; height: 92px; flex: none; border-radius: 50%; background: var(--rosa); }
 
   /* Escena 8: cierre */
@@ -121,7 +121,7 @@
       <p class="kicker">Paso 1</p>
       <h2 class="serif" style="font-size:108px;color:var(--tinta-f)">Escanean el QR<br><em>y suben sus fotos</em></h2>
     </div>
-    <div class="abs telefono" id="s4-tel" style="left:300px;top:600px;width:560px;height:1080px">
+    <div class="abs telefono" id="s4-tel" style="left:300px;top:660px;width:540px;height:1040px">
       <div class="tel-pantalla">
         <div class="tel-portada"><span>Nuestra boda</span><b class="serif">Sofía &amp; Martín</b></div>
         <div class="tel-grilla" id="s4-grilla">
@@ -132,12 +132,12 @@
         <div class="tel-boton">+ Subir fotos</div>
       </div>
     </div>
-    <div class="abs qr-tarjeta" id="s4-qr" style="left:50px;top:1040px;width:340px">
+    <div class="abs qr-tarjeta" id="s4-qr" style="left:50px;top:1080px;width:330px">
       <img class="qr" alt="">
       <b>Compartí tus fotos</b>
       <span>Escaneá con la cámara</span>
     </div>
-    <div class="abs chip" id="s4-chip" style="left:90px;top:1500px">Sin apps · Sin registro</div>
+    <div class="abs cx" style="top:520px"><span class="chip" id="s4-chip" style="display:inline-block">Sin apps · Sin registro</span></div>
   </section>
 
   <!-- 5 · Pantalla del salón -->
@@ -296,7 +296,7 @@
       slide($('#s4-tel'), t, 0.3, 0.7, { y: 700 });
       slide($('#s4-qr'), t, 0.8, 0.6, { x: -500, r0: -20, r: -6 });
       $$('#s4-grilla img').forEach((img, i) => pop(img, t, 1.4 + i * 0.22, 0.35, { y: 0, s: 0.3 }));
-      pop($('#s4-chip'), t, 3.6, 0.45, { y: 30, s: 0.6, r: -3 });
+      pop($('#s4-chip'), t, 3.4, 0.45, { y: 30, s: 0.6, r: -2 });
     },
     // 5 · pantalla del salón
     (t) => {
