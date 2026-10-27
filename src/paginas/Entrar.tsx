@@ -29,6 +29,10 @@ export default function Entrar() {
   const sesion = useSesion();
   const navegar = useNavigate();
   const [params] = useSearchParams();
+  const solicitado = params.get('next') ?? '';
+  const destino = solicitado === '/contratar' || solicitado.startsWith('/contratar?') || /^\/panel\/compra\/[0-9a-f-]{36}(?:\?.*)?$/i.test(solicitado)
+    ? solicitado
+    : '/panel';
   const [modo, setModo] = useState<Modo>(params.get('modo') === 'entrar' ? 'entrar' : 'crear');
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
@@ -39,8 +43,8 @@ export default function Entrar() {
   const [aviso, setAviso] = useState('');
 
   useEffect(() => {
-    if (sesion && !esAnonima(sesion)) navegar('/panel', { replace: true });
-  }, [sesion, navegar]);
+    if (sesion && !esAnonima(sesion)) navegar(destino, { replace: true });
+  }, [sesion, navegar, destino]);
 
   function cambiar(m: Modo) {
     setModo(m);
@@ -61,11 +65,11 @@ export default function Entrar() {
       const { data, error } = await supabase.auth.signUp({
         email: correo,
         password: clave,
-        options: { data: { nombre: nombre.trim() }, emailRedirectTo: `${window.location.origin}/panel` },
+        options: { data: { nombre: nombre.trim() }, emailRedirectTo: `${window.location.origin}${destino}` },
       });
       setEnviando(false);
       if (error) return setError(mensajeDeError(error.message, error.status));
-      if (data.session) return navegar('/panel', { replace: true });
+      if (data.session) return navegar(destino, { replace: true });
       // Si el proyecto pide confirmar el email, la cuenta queda creada pero sin sesión.
       return setAviso(`Te mandamos un email a ${correo} para confirmar la cuenta. Abrilo y ya entrás.`);
     }
@@ -74,13 +78,13 @@ export default function Entrar() {
       const { error } = await supabase.auth.signInWithPassword({ email: correo, password: clave });
       setEnviando(false);
       if (error) return setError(mensajeDeError(error.message, error.status));
-      return navegar('/panel', { replace: true });
+      return navegar(destino, { replace: true });
     }
 
     if (modo === 'link') {
       const { error } = await supabase.auth.signInWithOtp({
         email: correo,
-        options: { emailRedirectTo: `${window.location.origin}/panel` },
+        options: { emailRedirectTo: `${window.location.origin}${destino}` },
       });
       setEnviando(false);
       if (error) return setError(mensajeDeError(error.message, error.status));

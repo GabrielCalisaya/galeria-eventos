@@ -36,7 +36,7 @@ async function hmacHex(clave: string, texto: string): Promise<string> {
 
 /** Firma x-signature de Mercado Pago: "ts=...,v1=..." sobre "id:<data.id>;request-id:<x-request-id>;ts:<ts>;" */
 async function firmaValida(req: Request, dataId: string): Promise<boolean> {
-  if (!MP_WEBHOOK_SECRET) return true;
+  if (!MP_WEBHOOK_SECRET) return false;
   const cabecera = req.headers.get('x-signature') ?? '';
   const requestId = req.headers.get('x-request-id') ?? '';
   const partes = Object.fromEntries(
@@ -53,6 +53,7 @@ async function firmaValida(req: Request, dataId: string): Promise<boolean> {
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return ok();
   if (!MP_ACCESS_TOKEN) return new Response('sin configurar', { status: 503 });
+  if (!MP_WEBHOOK_SECRET) return new Response('webhook sin clave', { status: 503 });
 
   const url = new URL(req.url);
   let body: { type?: string; topic?: string; action?: string; data?: { id?: string | number } } = {};
@@ -83,6 +84,61 @@ Deno.serve(async (req) => {
   if (!pagoId) return ok();
 
   const admin = clienteAdmin();
+  const { data: compraPago } = await admin
+    .from('compra_pagos')
+    .select('id,compra_id,user_id,monto,moneda,estado')
+    .eq('id', pagoId)
+    .maybeSingle();
+
+  if (compraPago) {
+    const estadoCompraPago = ESTADOS[pagoMp.status] ?? 'pendiente';
+    const montoCompraOk = Math.abs(Number(pagoMp.transaction_amount) - Number(compraPago.monto)) < 0.01
+      && pagoMp.currency_id === compraPago.moneda;
+    const estadoVerificado = estadoCompraPago === 'aprobado' && !montoCompraOk ? 'en_proceso' : estadoCompraPago;
+
+    await admin.from('compra_pagos').update({
+      mp_payment_id: String(pagoMp.id),
+      estado: estadoVerificado,
+      detalle: montoCompraOk ? (pagoMp.status_detail ?? null) : 'monto o moneda no coincide',
+      updated_at: new Date().toISOString(),
+    }).eq('id', compraPago.id);
+
+    if (estadoCompraPago === 'aprobado' && montoCompraOk) {
+      const { data: compra } = await admin.from('compras')
+        .select('id,user_id,event_id,titulo_evento,tipo_evento,fecha_evento,gallery_pack,invitation_tier,productos,total,moneda')
+        .eq('id', compraPago.compra_id)
+        .maybeSingle();
+      if (!compra) return new Response('compra no encontrada', { status: 500 });
+
+      // Solo avanza desde estados pendientes: un aviso repetido no devuelve a "pagada" una compra en preparación o entregada.
+      await admin.from('compras').update({ estado: 'pagada', updated_at: new Date().toISOString() })
+        .eq('id', compra.id).in('estado', ['pendiente_pago', 'transferencia_pendiente']);
+      if (compra.event_id && compra.gallery_pack) {
+        const { data: precio } = await admin.from('precios_pack').select('limite_fotos,meses_album').eq('pack', compra.gallery_pack).maybeSingle();
+        const vence = new Date();
+        vence.setMonth(vence.getMonth() + (precio?.meses_album ?? 6));
+        const { error: errorActivar } = await admin.from('events').update({
+          estado: 'activo',
+          pack: compra.gallery_pack,
+          limite_fotos: precio?.limite_fotos ?? 1500,
+          vence_album: vence.toISOString().slice(0, 10),
+        }).eq('id', compra.event_id).in('estado', ['borrador', 'activo']);
+        if (errorActivar) return new Response('no se pudo activar la galería', { status: 500 });
+      }
+
+      // La marca evita correos duplicados cuando Mercado Pago reintenta el webhook.
+      const { data: marcado } = await admin.from('compras').update({ email_notificado_at: new Date().toISOString() })
+        .eq('id', compra.id).is('email_notificado_at', null).select('id').maybeSingle();
+      if (marcado && !(await avisarCompra(admin, compra, pagoMp))) {
+        await admin.from('compras').update({ email_notificado_at: null }).eq('id', compra.id);
+        return new Response('no se pudo enviar el correo de compra', { status: 500 });
+      }
+    } else if (estadoCompraPago === 'devuelto') {
+      await admin.from('compras').update({ estado: 'reembolsada', updated_at: new Date().toISOString() }).eq('id', compraPago.compra_id);
+    }
+    return ok();
+  }
+
   const { data: pago } = await admin.from('pagos').select('id, event_id, pack, monto, moneda, estado').eq('id', pagoId).maybeSingle();
   if (!pago) return ok();
 
@@ -129,6 +185,59 @@ Deno.serve(async (req) => {
 });
 
 type Admin = ReturnType<typeof clienteAdmin>;
+
+async function avisarCompra(
+  admin: Admin,
+  compra: {
+    id: string; user_id: string; event_id: string | null; titulo_evento: string; tipo_evento: string;
+    fecha_evento: string | null; gallery_pack: string | null; invitation_tier: string | null;
+    productos: Array<{ tipo: string; nombre: string }>; total: number; moneda: string;
+  },
+  pagoMp: { id: number; transaction_amount: number },
+): Promise<boolean> {
+  const { data: usuario } = await admin.auth.admin.getUserById(compra.user_id);
+  const email = usuario?.user?.email ?? '';
+  const nombre = (usuario?.user?.user_metadata?.nombre as string | undefined) ?? '';
+  const ordenUrl = `${SITIO}/panel/compra/${compra.id}`;
+  const lista = (compra.productos ?? []).map((p) => `<li>${escapar(p.nombre)}</li>`).join('');
+  const incluyeInvitacion = Boolean(compra.invitation_tier);
+  const incluyeGaleria = Boolean(compra.gallery_pack);
+  const datos = [
+    incluyeInvitacion ? 'Nombres tal como deben aparecer y texto/frase de la invitación.' : '',
+    incluyeInvitacion ? 'Lugar, dirección, enlace de mapa, horarios y cronograma.' : '',
+    incluyeInvitacion ? 'Vestimenta, regalos/alias, modalidad RSVP y número de WhatsApp de contacto.' : '',
+    incluyeInvitacion ? 'Fotos, video, música y colores o estilo deseado.' : '',
+    incluyeGaleria ? 'Color, bienvenida y detalles del evento para personalizar la galería.' : '',
+    compra.gallery_pack === 'experiencia' || compra.gallery_pack === 'completo' ? 'Preguntas y respuestas de la trivia y datos para la pantalla del salón.' : '',
+  ].filter(Boolean).map((item) => `<li>${escapar(item)}</li>`).join('');
+  const cuerpo = `<p>${nombre ? `Hola ${escapar(nombre)}, ` : ''}confirmamos el pago de tu compra para <strong>${escapar(compra.titulo_evento)}</strong>.</p>
+    <p><strong>Productos incluidos</strong></p><ul>${lista}</ul>
+    <p><strong>Total pagado:</strong> ${pesos(Number(pagoMp.transaction_amount))}<br><strong>Referencia:</strong> ${escapar(compra.id)}</p>
+    <p>Para que podamos preparar todo sin pedirte los datos por mensaje, completá la ficha de tu evento. Te va a pedir:</p>
+    <ul>${datos}</ul>
+    <p>La galería, si la compraste, se activa automáticamente. La invitación se prepara con los datos que cargues en la ficha.</p>`;
+  const html = `<!doctype html><html><body style="margin:0;background:#f5f0e9;padding:24px 12px;font-family:Arial,sans-serif;color:#30262b">
+    <div style="max-width:560px;margin:0 auto;background:#fffdf9;border:1px solid #eadfd5;border-radius:24px;padding:32px 28px">
+    <p style="margin:0 0 6px;font-size:12px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#91694d">Invitaciones Digitales · by NewTech</p>
+    <h1 style="margin:0 0 18px;font-family:Georgia,serif;font-size:30px;line-height:1.1;color:#1d1619">¡Compra confirmada!</h1>
+    <div style="font-size:15px;line-height:1.6">${cuerpo}</div>
+    <p style="margin-top:24px"><a href="${ordenUrl}" style="display:inline-block;padding:14px 24px;border-radius:999px;background:#492e3b;color:#fff;text-decoration:none;font-weight:700">Completar datos del evento</a></p>
+    </div><p style="text-align:center;font-size:12px;color:#73656a;margin-top:16px">NewTech · Jujuy</p></body></html>`;
+  const enviado = await enviarCorreo(email, `Compra confirmada · ${compra.titulo_evento}`, html);
+  if (ADMIN_EMAIL) {
+    await enviarCorreo(ADMIN_EMAIL, `Nueva compra · ${compra.titulo_evento}`, plantilla(
+      'Nueva compra confirmada',
+      `<p><strong>Evento:</strong> ${escapar(compra.titulo_evento)}${compra.fecha_evento ? ` · ${escapar(compra.fecha_evento)}` : ''}<br>
+      <strong>Cliente:</strong> ${escapar(nombre || 'Anfitrión')} · ${escapar(email)}<br>
+      <strong>Referencia:</strong> ${escapar(compra.id)}<br><strong>Importe:</strong> ${pesos(Number(pagoMp.transaction_amount))}<br>
+      <strong>Productos:</strong> ${lista}</p>`,
+      { texto: 'Ver la compra', url: ordenUrl },
+      undefined,
+      'Invitaciones Digitales · by NewTech',
+    ));
+  }
+  return enviado;
+}
 
 async function avisarPago(
   admin: Admin,

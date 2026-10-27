@@ -13,6 +13,9 @@ import Pantalla from './paginas/Pantalla';
 import Demo, { DemoPantalla } from './paginas/Demo';
 import { Arrepentimiento, Devoluciones, Privacidad, Terminos } from './paginas/Legal';
 import RutaAnfitrion from './componentes/RutaAnfitrion';
+import Contratar from './paginas/Contratar';
+import CompraEvento from './paginas/CompraEvento';
+import AdministrarTransferencias from './paginas/AdministrarTransferencias';
 
 export default function App() {
   if (configFaltante) {
@@ -40,8 +43,11 @@ export default function App() {
       <Route path="/privacidad" element={<Privacidad />} />
       <Route path="/devoluciones" element={<Devoluciones />} />
       <Route path="/arrepentimiento" element={<Arrepentimiento />} />
+      <Route path="/contratar" element={<Contratar />} />
       <Route element={<RutaAnfitrion />}>
         <Route path="/panel" element={<MisEventos />} />
+        <Route path="/panel/administracion/transferencias" element={<AdministrarTransferencias />} />
+        <Route path="/panel/compra/:id" element={<CompraEvento />} />
         <Route path="/panel/nuevo" element={<NuevoEvento />} />
         <Route path="/panel/:id" element={<PanelEvento />} />
         <Route path="/panel/:id/trivia" element={<TriviaPanel />} />

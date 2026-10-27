@@ -135,3 +135,7 @@ npm run dev
 - Los eventos nacen **activos** para poder probar. Cuando se sume el cobro (semanas 5 y 6), van a nacer en borrador hasta que se pague.
 - Una subida que se corta a mitad de camino deja una fila "pendiente" que no se muestra; más adelante una tarea programada las va a limpiar.
 - Las fotos HEIC de iPhone se convierten solas al elegirlas desde Safari. En Chrome de escritorio no se pueden leer y se marcan con error.
+
+## Administración de transferencias
+
+La pantalla administrativa está en `/panel/administracion/transferencias`. Para autorizarla, configurá el secreto `TRANSFER_ADMIN_EMAILS` en Supabase con los emails exactos de las cuentas administradoras, separados por coma. La función vuelve a validar la sesión y el email desde Supabase Auth en cada consulta y confirmación; ocultar o alterar la pantalla no concede permisos. Sin el secreto configurado, la función rechaza el acceso.
