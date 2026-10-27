@@ -8,7 +8,7 @@ import './compra-evento.css';
 type Compra = {
   id: string; idempotency_key: string; event_id: string | null; titulo_evento: string; tipo_evento: string; fecha_evento: string | null;
   gallery_pack: string | null; invitation_tier: string | null; productos: Array<{ tipo: string; nombre: string; precio: number }>;
-  total: number; moneda: string; estado: string; datos_invitacion: Record<string, string> | null; datos_completos: boolean; url_invitacion: string | null;
+  descuento: number; total: number; moneda: string; estado: string; datos_invitacion: Record<string, string> | null; datos_completos: boolean; url_invitacion: string | null;
 };
 type Pago = { metodo: string; estado: string; numero_transferencia: string | null; monto: number; moneda: string };
 const campos = [
@@ -47,7 +47,7 @@ export default function CompraEvento() {
 
   const cargar = useCallback(async () => {
     setCargando(true); setError('');
-    const { data, error: errorCompra } = await supabase.from('compras').select('id,idempotency_key,event_id,titulo_evento,tipo_evento,fecha_evento,gallery_pack,invitation_tier,productos,total,moneda,estado,datos_invitacion,datos_completos,url_invitacion').eq('id', id).maybeSingle();
+    const { data, error: errorCompra } = await supabase.from('compras').select('id,idempotency_key,event_id,titulo_evento,tipo_evento,fecha_evento,gallery_pack,invitation_tier,productos,descuento,total,moneda,estado,datos_invitacion,datos_completos,url_invitacion').eq('id', id).maybeSingle();
     if (errorCompra || !data) { setError('No encontramos este pedido en tu cuenta. Revisá que hayas iniciado sesión con el email de compra.'); setCargando(false); return; }
     const pedido = data as Compra;
     setCompra(pedido);
@@ -102,7 +102,7 @@ export default function CompraEvento() {
           <div className="compra-detalle-titulo"><div><p className="etiqueta">Pedido · {compra.id.slice(0, 8).toUpperCase()}</p><h1>{compra.titulo_evento}</h1><p>Estado: <strong>{nombresEstado[compra.estado] ?? compra.estado}</strong></p></div><button className="boton" type="button" onClick={() => void cargar()}>Actualizar estado</button></div>
           {pagoMensaje && <p className="compra-alerta" role="status">{pagoMensaje}</p>}
           <section className="tarjeta compra-resumen-pedido">
-            <div><p className="etiqueta">Tu pedido</p><ul className="compra-lineas">{(compra.productos ?? []).map((producto, i) => <li key={`${producto.nombre}-${i}`}><span>{producto.nombre}</span><strong>{dinero(producto.precio, compra.moneda)}</strong></li>)}</ul><div className="compra-total"><span>Total</span><strong>{dinero(compra.total, compra.moneda)}</strong></div></div>
+            <div><p className="etiqueta">Tu pedido</p><ul className="compra-lineas">{(compra.productos ?? []).map((producto, i) => <li key={`${producto.nombre}-${i}`}><span>{producto.nombre}</span><strong>{dinero(producto.precio, compra.moneda)}</strong></li>)}</ul>{Number(compra.descuento) > 0 && <p className="compra-descuento"><span>Descuento del combo</span><strong>−{dinero(compra.descuento, compra.moneda)}</strong></p>}<div className="compra-total"><span>Total</span><strong>{dinero(compra.total, compra.moneda)}</strong></div></div>
             {pago?.metodo === 'transferencia' && <div className="compra-transferencia"><span className="compra-transfer-icon" aria-hidden="true">↗</span><div><h2>Transferencia bancaria</h2><p>Transferí el total indicado a este alias y luego avisá por WhatsApp con la referencia de tu pedido.</p><strong className="compra-telefono">{pago.numero_transferencia ?? 'Alias no disponible'}</strong><a className="boton boton-primario" href={linkWhatsapp(`Hola, hice la transferencia del evento ${compra.titulo_evento}. Referencia: ${compra.id}.`)} target="_blank" rel="noreferrer">Avisar por WhatsApp ↗</a><small>Activaremos el pedido cuando confirmemos la acreditación.</small></div></div>}
           </section>
           {compra.event_id && <p className="compra-alerta">La galería de tu evento ya está preparada. La vas a encontrar en <Link to={`/panel/${compra.event_id}`}>Mis eventos</Link> cuando el pago quede confirmado.</p>}
