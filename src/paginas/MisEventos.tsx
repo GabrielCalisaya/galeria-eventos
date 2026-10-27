@@ -31,7 +31,7 @@ export default function MisEventos() {
             <p className="etiqueta">Panel del anfitrión</p>
             <h1>Mis eventos</h1>
           </div>
-          <Link className="boton boton-primario" to="/panel/nuevo">
+          <Link className="boton boton-primario" to="/contratar">
             Crear evento
           </Link>
         </div>
