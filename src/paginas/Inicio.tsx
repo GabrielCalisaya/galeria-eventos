@@ -69,7 +69,7 @@ const PREGUNTAS = [
 export default function Inicio() {
   const precios = usePrecios();
   const lista = precios && precios.length ? precios : PRECIOS_RESPALDO;
-  const muestra = FOTOS_DEMO.slice(0, 6);
+  const muestra = FOTOS_DEMO.slice(0, 9);
 
   return (
     <div className="sitio">

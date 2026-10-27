@@ -15,7 +15,7 @@ export const NEGOCIO = {
   facebook: 'https://www.facebook.com/newtech.juy',
   sitio: 'https://newtech.net.ar',
   invitaciones: 'https://invitaciones.newtech.net.ar',
-  foto: 'https://newtech.net.ar/img/gabriel.webp',
+  foto: '/gabriel.webp',
   defensaConsumidor: 'https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario',
 } as const;
 

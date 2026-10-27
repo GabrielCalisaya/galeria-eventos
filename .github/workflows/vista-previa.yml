@@ -37,7 +37,6 @@ jobs:
         run: |
           npm install --no-save --no-audit --no-fund playwright@1.48.2
           node scripts/capturas.mjs
-          curl -sfL -A 'Mozilla/5.0' https://newtech.net.ar/img/gabriel.webp -o capturas/gabriel.webp || echo '::warning::No se pudo bajar la foto de newtech.net.ar'
 
       - name: Guardar capturas en la rama vista-previa
         run: |
