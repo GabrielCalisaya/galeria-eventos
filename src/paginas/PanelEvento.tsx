@@ -34,6 +34,8 @@ export default function PanelEvento() {
   const [params, setParams] = useSearchParams();
   const retornoPago = params.get('pago');
   const [recienPagado, setRecienPagado] = useState(false);
+  // Pedido del checkout unificado que creó este evento (si lo hay).
+  const [pedido, setPedido] = useState<{ id: string; estado: string } | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -43,6 +45,14 @@ export default function PanelEvento() {
       .eq('id', id)
       .maybeSingle()
       .then(({ data }) => setEvento((data as Evento | null) ?? null));
+    supabase
+      .from('compras')
+      .select('id,estado')
+      .eq('event_id', id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => setPedido((data as { id: string; estado: string } | null) ?? null));
   }, [id]);
 
   // Al volver de Mercado Pago, se espera la confirmación del pago (llega por aviso del servidor).
@@ -220,6 +230,19 @@ export default function PanelEvento() {
               <span className="girando" aria-hidden="true" />
               <h2>Confirmando tu pago…</h2>
               <p className="ayuda">Mercado Pago nos avisa en unos segundos. No cierres esta página.</p>
+            </section>
+          ) : pedido && !['cancelada', 'reembolsada'].includes(pedido.estado) ? (
+            <section className="tarjeta activar">
+              <p className="etiqueta">Pedido en curso</p>
+              <h2>{pedido.estado === 'transferencia_pendiente' ? 'Esperando la confirmación de tu transferencia' : 'Tu galería se activa con el pago del pedido'}</h2>
+              <p className="ayuda">
+                Esta galería es parte de un pedido. Se activa sola cuando confirmamos el pago; no hace falta pagarla de nuevo acá.
+              </p>
+              <div className="acciones">
+                <Link className="boton boton-primario" to={`/panel/compra/${pedido.id}`}>
+                  Ver mi pedido
+                </Link>
+              </div>
             </section>
           ) : (
             <ElegirPack evento={evento} modo="activar" estadoRetorno={retornoPago} />
