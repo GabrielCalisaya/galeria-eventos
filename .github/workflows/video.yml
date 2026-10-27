@@ -1,0 +1,42 @@
+name: Video promocional
+
+# Graba el video promocional (video/promo.html) y lo deja en la rama "video-salida".
+# No compila ni publica el sitio.
+
+on:
+  push:
+    branches: [video-promo]
+    paths: ['video/**', '.github/workflows/video.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  video:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Preparar herramientas
+        run: |
+          which ffmpeg || (sudo apt-get update -q && sudo apt-get install -y -q ffmpeg)
+          npm install --no-save --no-audit --no-fund playwright@1.48.2 qrcode@1.5.4
+          npx --yes playwright@1.48.2 install --with-deps chromium
+
+      - name: Grabar
+        run: node video/grabar.mjs
+
+      - name: Guardar en la rama video-salida
+        run: |
+          cd salida
+          git init -q
+          git config user.name "Gabriel Calisaya"
+          git config user.email "gaabiiomaar98@gmail.com"
+          git add -A
+          git commit -q -m "Video de ${GITHUB_SHA::7}"
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" HEAD:video-salida
