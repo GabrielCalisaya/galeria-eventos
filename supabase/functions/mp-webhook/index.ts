@@ -110,7 +110,9 @@ Deno.serve(async (req) => {
         .maybeSingle();
       if (!compra) return new Response('compra no encontrada', { status: 500 });
 
-      await admin.from('compras').update({ estado: 'pagada', updated_at: new Date().toISOString() }).eq('id', compra.id);
+      // Solo avanza desde estados pendientes: un aviso repetido no devuelve a "pagada" una compra en preparación o entregada.
+      await admin.from('compras').update({ estado: 'pagada', updated_at: new Date().toISOString() })
+        .eq('id', compra.id).in('estado', ['pendiente_pago', 'transferencia_pendiente']);
       if (compra.event_id && compra.gallery_pack) {
         const { data: precio } = await admin.from('precios_pack').select('limite_fotos,meses_album').eq('pack', compra.gallery_pack).maybeSingle();
         const vence = new Date();

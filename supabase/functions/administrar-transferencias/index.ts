@@ -1,4 +1,38 @@
 import { clienteAdmin, cors, respuesta, usuarioDelPedido } from '../_shared/comun.ts';
+import { enviarCorreo, escapar, plantilla } from '../_shared/correo.ts';
+
+const SITIO = (Deno.env.get('ALLOWED_ORIGIN') ?? '').replace(/\/$/, '');
+const pesos = (n: number) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n);
+
+type Admin = ReturnType<typeof clienteAdmin>;
+
+async function avisarTransferenciaConfirmada(
+  admin: Admin,
+  compra: { id: string; event_id: string | null; gallery_pack: string | null; total: number },
+): Promise<boolean> {
+  const { data } = await admin.from('compras').select('user_id,titulo_evento,invitation_tier').eq('id', compra.id).maybeSingle();
+  if (!data) return false;
+  const { data: usuario } = await admin.auth.admin.getUserById(data.user_id);
+  const email = usuario?.user?.email ?? '';
+  const nombre = (usuario?.user?.user_metadata?.nombre as string | undefined) ?? '';
+  const pasos = [
+    compra.event_id && compra.gallery_pack ? 'Tu galería ya está activa: el QR funciona desde ahora.' : '',
+    data.invitation_tier ? 'Completá la ficha de tu evento para que preparemos la invitación.' : '',
+  ].filter(Boolean).map((p) => `<li style="margin-bottom:6px">${escapar(p)}</li>`).join('');
+  return enviarCorreo(
+    email,
+    `Transferencia confirmada · ${data.titulo_evento}`,
+    plantilla(
+      '¡Recibimos tu transferencia!',
+      `<p>${nombre ? `Hola ${escapar(nombre)}, ` : ''}confirmamos la acreditación de ${pesos(Number(compra.total))} para <strong>${escapar(
+        data.titulo_evento,
+      )}</strong>.</p>${pasos ? `<ol style="padding-left:20px;margin:0">${pasos}</ol>` : ''}`,
+      { texto: 'Ver mi pedido', url: `${SITIO}/panel/compra/${compra.id}` },
+      undefined,
+      'Invitaciones Digitales · by NewTech',
+    ),
+  );
+}
 
 const administradores = new Set(
   (Deno.env.get('TRANSFER_ADMIN_EMAILS') ?? '')
@@ -117,9 +151,19 @@ Deno.serve(async (req) => {
       await admin.from('compra_pagos').update({ estado: 'pendiente', detalle: 'confirmación revertida por error al activar la galería', updated_at: new Date().toISOString() }).eq('id', pago.id).eq('estado', 'aprobado');
       return respuesta(500, { error: 'No se pudo activar la galería. La transferencia quedó pendiente para reintentar.' });
     }
-    const { error: errorNotificar } = await admin.from('compras').update({ email_notificado_at: ahora }).eq('id', compra.id).is('email_notificado_at', null);
-    if (errorNotificar) console.error('No se pudo registrar el aviso de transferencia confirmada', compra.id, errorNotificar);
   }
 
-  return respuesta(200, { confirmado: true, compra_id: compra.id, event_id: compra.event_id });
+  // Aviso al cliente, una sola vez por compra. Si el correo falla, la marca se libera para poder reenviarlo.
+  let correoEnviado = false;
+  const { data: marcada } = await admin.from('compras').update({ email_notificado_at: ahora })
+    .eq('id', compra.id).is('email_notificado_at', null).select('id').maybeSingle();
+  if (marcada) {
+    correoEnviado = await avisarTransferenciaConfirmada(admin, compra);
+    if (!correoEnviado) {
+      await admin.from('compras').update({ email_notificado_at: null }).eq('id', compra.id);
+      console.error('No se pudo enviar el aviso de transferencia confirmada', compra.id);
+    }
+  }
+
+  return respuesta(200, { confirmado: true, compra_id: compra.id, event_id: compra.event_id, correo_enviado: correoEnviado });
 });

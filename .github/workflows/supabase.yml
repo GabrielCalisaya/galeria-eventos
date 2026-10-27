@@ -63,9 +63,11 @@ jobs:
           EMAIL_DESDE: ${{ secrets.EMAIL_DESDE }}
           ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
           WHATSAPP_NUMERO: ${{ secrets.WHATSAPP_NUMERO }}
+          TRANSFER_ADMIN_EMAILS: ${{ secrets.TRANSFER_ADMIN_EMAILS }}
+          TRANSFER_PHONE: ${{ secrets.TRANSFER_PHONE }}
         run: |
           args=()
-          for v in RESEND_API_KEY EMAIL_DESDE ADMIN_EMAIL WHATSAPP_NUMERO; do
+          for v in RESEND_API_KEY EMAIL_DESDE ADMIN_EMAIL WHATSAPP_NUMERO TRANSFER_ADMIN_EMAILS TRANSFER_PHONE; do
             [ -n "${!v}" ] && args+=("$v=${!v}")
           done
           [ -n "$MP_ACCESS_TOKEN" ] && args+=("MP_ACCESS_TOKEN=$MP_ACCESS_TOKEN")
