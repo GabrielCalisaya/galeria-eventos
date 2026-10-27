@@ -4,12 +4,21 @@
 // GET ?vista=pedidos        → pedidos con invitación, con la ficha del cliente.
 // POST { compra_id }                                   → confirma la acreditación de una transferencia.
 // POST { compra_id, accion: 'estado', estado, url_invitacion } → invitación en preparación o entregada.
+// POST { compra_id, accion: 'reintentar_wordpress' }          → vuelve a crear el borrador en WordPress.
 
 import { clienteAdmin, cors, respuesta, usuarioDelPedido } from '../_shared/comun.ts';
 import { enviarCorreo, escapar, plantilla } from '../_shared/correo.ts';
 import { sincronizarInvitacion } from '../_shared/invitaciones-wordpress.ts';
+import { avisarInvitacionLista } from '../_shared/entrega.ts';
 
 const SITIO = (Deno.env.get('ALLOWED_ORIGIN') ?? '').replace(/\/$/, '');
+const HOST_INVITACIONES = (() => {
+  try {
+    return new URL(Deno.env.get('INVITACIONES_WORDPRESS_URL') ?? 'https://invitaciones.newtech.net.ar').hostname;
+  } catch {
+    return 'invitaciones.newtech.net.ar';
+  }
+})();
 const pesos = (n: number) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n);
 
 type Admin = ReturnType<typeof clienteAdmin>;
@@ -51,15 +60,15 @@ async function cambiarEstadoInvitacion(admin: Admin, compraId: string, estado?: 
   if (estado === 'entregada') {
     try {
       const u = new URL(String(url ?? '').trim());
-      if (u.protocol !== 'https:') throw new Error('protocolo');
+      if (u.protocol !== 'https:' || u.hostname !== HOST_INVITACIONES || u.username || u.password || u.hash) throw new Error('url');
       urlFinal = u.href;
     } catch {
-      return respuesta(400, { error: 'Para entregar la invitación pegá su URL final (https://…).' });
+      return respuesta(400, { error: `Pegá la URL pública de la invitación (https://${HOST_INVITACIONES}/…).` });
     }
   }
 
   const { data: compra } = await admin.from('compras')
-    .select('id,user_id,titulo_evento,invitation_tier,estado,url_invitacion')
+    .select('id,invitation_tier,estado,url_invitacion')
     .eq('id', compraId).maybeSingle();
   if (!compra || !compra.invitation_tier) return respuesta(404, { error: 'No encontramos ese pedido de invitación.' });
   const permitidos = estado === 'preparando' ? ['pagada'] : ['pagada', 'preparando', 'entregada'];
@@ -72,24 +81,8 @@ async function cambiarEstadoInvitacion(admin: Admin, compraId: string, estado?: 
     .eq('id', compra.id).eq('estado', compra.estado);
   if (error) return respuesta(500, { error: 'No se pudo actualizar el pedido.' });
 
-  let correoEnviado = false;
-  if (urlFinal && urlFinal !== compra.url_invitacion) {
-    const { data: usuario } = await admin.auth.admin.getUserById(compra.user_id);
-    const nombre = (usuario?.user?.user_metadata?.nombre as string | undefined) ?? '';
-    correoEnviado = await enviarCorreo(
-      usuario?.user?.email ?? '',
-      `Tu invitación está lista · ${compra.titulo_evento}`,
-      plantilla(
-        '¡Tu invitación está lista!',
-        `<p>${nombre ? `Hola ${escapar(nombre)}, ` : ''}ya publicamos la invitación de <strong>${escapar(compra.titulo_evento)}</strong>.
-         Compartí este enlace con tus invitados:</p><p><a href="${escapar(urlFinal)}">${escapar(urlFinal)}</a></p>
-         <p>Si querés corregir algún dato, respondé este correo o escribinos por WhatsApp.</p>`,
-        { texto: 'Abrir mi invitación', url: urlFinal },
-        { texto: 'Ver mi pedido', url: `${SITIO}/panel/compra/${compra.id}` },
-        'Invitaciones Digitales · by NewTech',
-      ),
-    );
-  }
+  // El aviso sale una sola vez por URL (también si la entrega llegó antes desde WordPress).
+  const correoEnviado = urlFinal ? await avisarInvitacionLista(admin, compra.id, urlFinal) : false;
   return respuesta(200, { actualizado: true, estado, url_invitacion: urlFinal ?? compra.url_invitacion, correo_enviado: correoEnviado });
 }
 
@@ -124,7 +117,7 @@ Deno.serve(async (req) => {
   if (req.method === 'GET' && vista === 'pedidos') {
     const { data: pedidos, error } = await admin
       .from('compras')
-      .select('id,user_id,titulo_evento,tipo_evento,fecha_evento,invitation_tier,productos,total,moneda,estado,datos_invitacion,datos_completos,url_invitacion,created_at,updated_at')
+      .select('id,user_id,titulo_evento,tipo_evento,tipo_invitacion,fecha_evento,invitation_tier,productos,total,moneda,estado,datos_invitacion,datos_completos,url_invitacion,wordpress_event_id,wordpress_url,wordpress_edit_url,invitacion_sync_estado,invitacion_sync_error,created_at,updated_at')
       .not('invitation_tier', 'is', null)
       .in('estado', ['transferencia_pendiente', 'pagada', 'preparando', 'entregada'])
       .order('created_at', { ascending: false })
@@ -166,6 +159,12 @@ Deno.serve(async (req) => {
 
   // Avance de la invitación: en preparación, o entregada con su URL final (se le avisa al cliente).
   if (body.accion === 'estado') return await cambiarEstadoInvitacion(admin, body.compra_id, body.estado, body.url_invitacion);
+
+  // Vuelve a pedirle a WordPress el borrador de la invitación (si falló la preparación automática).
+  if (body.accion === 'reintentar_wordpress') {
+    const r = await sincronizarInvitacion(admin, body.compra_id);
+    return r.ok ? respuesta(200, { sincronizada: true }) : respuesta(409, { error: r.error ?? 'No se pudo preparar el borrador en WordPress.' });
+  }
 
   const { data: compra, error: errorCompra } = await admin
     .from('compras')

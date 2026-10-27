@@ -30,5 +30,6 @@ verify_jwt = false
 [functions.administrar-transferencias]
 verify_jwt = false
 
-[functions.administrar-invitaciones]
+# WordPress llama sin sesión: la función valida la firma HMAC con el secreto compartido.
+[functions.wp-bridge]
 verify_jwt = false

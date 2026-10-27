@@ -10,17 +10,31 @@ type Transferencia = {
   compra_pagos: Array<{ numero_transferencia: string | null }>;
 };
 type Pedido = {
-  id: string; email: string; titulo_evento: string; fecha_evento: string | null; invitation_tier: string;
+  id: string; email: string; titulo_evento: string; fecha_evento: string | null; invitation_tier: string; tipo_invitacion: string | null;
   estado: string; datos_invitacion: Record<string, string> | null; datos_completos: boolean; url_invitacion: string | null; created_at: string;
+  wordpress_event_id: number | null; wordpress_url: string | null; wordpress_edit_url: string | null;
+  invitacion_sync_estado: string | null; invitacion_sync_error: string | null;
 };
 
 const dinero = (n: number, moneda: string) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: moneda, maximumFractionDigits: 0 }).format(Number(n));
+/** Las preguntas del quiz Deluxe se guardan como JSON: se muestran legibles, con la correcta marcada. */
+function valorFicha(clave: string, valor: string): string {
+  if (clave !== 'quiz_questions') return valor;
+  try {
+    const preguntas = JSON.parse(valor) as Array<{ question: string; answers: string[]; correct: number }>;
+    return preguntas.map((q, i) => `${i + 1}. ${q.question}\n${q.answers.map((a, j) => `   ${j === q.correct ? '✓' : '·'} ${a}`).join('\n')}`).join('\n');
+  } catch {
+    return valor;
+  }
+}
 const fecha = (value: string) => new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
 const NIVELES: Record<string, string> = { standard: 'Estándar', premium: 'Premium', deluxe: 'Deluxe' };
 const ESTADOS: Record<string, string> = {
   transferencia_pendiente: 'Transferencia sin confirmar', pagada: 'Pagada · por preparar', preparando: 'En preparación', entregada: 'Entregada',
 };
+const FORMATOS: Record<string, string> = { wedding: 'Boda o aniversario', xv: 'Fiesta de 15', birthday: 'Cumpleaños' };
 const ETIQUETAS: Record<string, string> = {
+  person_one: 'Primera persona', person_two: 'Segunda persona', quiz_heading: 'Título del quiz', quiz_questions: 'Preguntas del quiz',
   nombres: 'Nombres', hora: 'Horario', lugar: 'Lugar', direccion: 'Dirección', mapa: 'Mapa', frase: 'Frase',
   cronograma: 'Cronograma', vestimenta: 'Vestimenta', regalos: 'Regalos', alias_regalo: 'Alias para regalos',
   titular_regalo: 'Titular', rsvp: 'Confirmación', whatsapp: 'WhatsApp', colores: 'Colores o estilo',
@@ -78,8 +92,15 @@ export default function Administracion() {
     });
   }
 
+  function reintentarWordPress(p: Pedido) {
+    void ejecutar(p.id, async () => {
+      await invocar('administrar-transferencias', { compra_id: p.id, accion: 'reintentar_wordpress' });
+      return `Se preparó el borrador de “${p.titulo_evento}” en WordPress.`;
+    });
+  }
+
   function cambiarEstado(p: Pedido, estado: 'preparando' | 'entregada') {
-    const url = (urls[p.id] ?? p.url_invitacion ?? '').trim();
+    const url = (urls[p.id] ?? p.url_invitacion ?? p.wordpress_url ?? '').trim();
     void ejecutar(p.id, async () => {
       const r = await invocar<{ correo_enviado?: boolean }>('administrar-transferencias', { compra_id: p.id, accion: 'estado', estado, url_invitacion: url });
       if (estado === 'preparando') return `“${p.titulo_evento}” quedó en preparación.`;
@@ -126,7 +147,7 @@ export default function Administracion() {
           )}
 
           <h2>Invitaciones</h2>
-          <p className="ayuda">La ficha que completó cada cliente. Al entregar, pegá la URL final: el cliente la ve en su pedido y le llega por correo.</p>
+          <p className="ayuda">Con la ficha completa y el pago confirmado, el borrador se crea solo en WordPress. Terminalo y activalo allá; al entregar, el cliente ve la URL en su pedido y le llega por correo.</p>
           {pedidos.length === 0 ? <div className="vacio"><p>Todavía no hay pedidos de invitación.</p></div> : (
             <ul className="admin-transferencias-lista">
               {pedidos.map((p) => {
@@ -134,29 +155,37 @@ export default function Administracion() {
                 return (
                   <li className="tarjeta admin-pedido" key={p.id}>
                     <div className="admin-transferencia-datos">
-                      <p className="etiqueta">{NIVELES[p.invitation_tier] ?? p.invitation_tier} · {ESTADOS[p.estado] ?? p.estado}</p>
+                      <p className="etiqueta">{NIVELES[p.invitation_tier] ?? p.invitation_tier}{p.tipo_invitacion ? ` · ${FORMATOS[p.tipo_invitacion] ?? p.tipo_invitacion}` : ''} · {ESTADOS[p.estado] ?? p.estado}</p>
                       <h3>{p.titulo_evento}</h3>
                       <p>{p.fecha_evento ? `${p.fecha_evento} · ` : ''}{p.email} · Referencia {p.id.slice(0, 8).toUpperCase()}</p>
                       {datos.length === 0 ? <p className="ayuda">El cliente todavía no completó la ficha.</p> : (
                         <details>
                           <summary>{p.datos_completos ? 'Ficha completa' : 'Ficha en borrador'} ({datos.length} datos)</summary>
                           <dl className="admin-ficha">
-                            {datos.map(([k, v]) => <div key={k}><dt>{ETIQUETAS[k] ?? k}</dt><dd>{v}</dd></div>)}
+                            {datos.map(([k, v]) => <div key={k}><dt>{ETIQUETAS[k] ?? k}</dt><dd>{valorFicha(k, v)}</dd></div>)}
                           </dl>
                         </details>
                       )}
+                      {p.wordpress_edit_url && <p><a href={p.wordpress_edit_url} target="_blank" rel="noreferrer">Abrir el borrador en WordPress ↗</a></p>}
+                      {p.wordpress_event_id && !p.wordpress_edit_url && <p className="ayuda">Vinculado al evento #{p.wordpress_event_id} de WordPress.</p>}
+                      {p.invitacion_sync_error && !p.wordpress_event_id && <p className="error">WordPress: {p.invitacion_sync_error}</p>}
                       {p.url_invitacion && <p>Invitación: <a href={p.url_invitacion} target="_blank" rel="noreferrer">{p.url_invitacion}</a></p>}
                     </div>
                     {['pagada', 'preparando', 'entregada'].includes(p.estado) && (
                       <div className="admin-pedido-acciones">
+                        {p.datos_completos && !p.wordpress_event_id && p.estado !== 'entregada' && (
+                          <button type="button" className="boton" disabled={ocupado !== null} onClick={() => reintentarWordPress(p)}>
+                            {ocupado === p.id ? 'Preparando…' : 'Crear borrador en WordPress'}
+                          </button>
+                        )}
                         {p.estado === 'pagada' && (
                           <button type="button" className="boton" disabled={ocupado !== null} onClick={() => cambiarEstado(p, 'preparando')}>Marcar en preparación</button>
                         )}
                         <label className="campo">
                           <span>URL final de la invitación</span>
-                          <input type="url" placeholder="https://invitaciones.newtech.net.ar/…" value={urls[p.id] ?? p.url_invitacion ?? ''} onChange={(e) => setUrls((u) => ({ ...u, [p.id]: e.target.value }))} />
+                          <input type="url" placeholder="https://invitaciones.newtech.net.ar/…" value={urls[p.id] ?? p.url_invitacion ?? p.wordpress_url ?? ''} onChange={(e) => setUrls((u) => ({ ...u, [p.id]: e.target.value }))} />
                         </label>
-                        <button type="button" className="boton boton-primario" disabled={ocupado !== null || !(urls[p.id] ?? p.url_invitacion ?? '').trim()} onClick={() => cambiarEstado(p, 'entregada')}>
+                        <button type="button" className="boton boton-primario" disabled={ocupado !== null || !(urls[p.id] ?? p.url_invitacion ?? p.wordpress_url ?? '').trim()} onClick={() => cambiarEstado(p, 'entregada')}>
                           {ocupado === p.id ? 'Guardando…' : p.estado === 'entregada' ? 'Actualizar URL' : 'Marcar entregada'}
                         </button>
                       </div>

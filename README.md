@@ -106,6 +106,8 @@ En el repo: **Settings → Secrets and variables → Actions → New repository 
 | `WHATSAPP_NUMERO` | WhatsApp de atención, solo dígitos con código de país |
 | `TRANSFER_ADMIN_EMAILS` | Emails de las cuentas que administran pedidos, separados por coma |
 | `TRANSFER_ALIAS` | Alias (o CBU/CVU) donde se reciben las transferencias |
+| `INVITACIONES_WORDPRESS_SECRET` | Secreto compartido con el plugin de invitaciones (`ga_checkout_secret` de WordPress) |
+| `INVITACIONES_WORDPRESS_URL` | Opcional. Sitio de invitaciones; por defecto `https://invitaciones.newtech.net.ar` |
 
 En Mercado Pago, el webhook (modo productivo, evento **Pagos**) va a `https://TU-PROJECT-REF.supabase.co/functions/v1/mp-webhook`.
 
@@ -153,6 +155,19 @@ npm run dev
 1. El cliente compra en `/contratar`. Se crea el pedido (`compras`) y, si incluye galería, una galería en borrador.
 2. Con Mercado Pago, el webhook confirma el pago y activa la galería. Con transferencia, NewTech confirma la acreditación en `/panel/administracion`.
 3. Si el pedido incluye invitación, el cliente completa la ficha en `/panel/compra/<id>`; al enviarla llega un correo a `ADMIN_EMAIL` con todos los datos.
-4. En `/panel/administracion`, NewTech marca la invitación **en preparación** y, al pegar la URL final, **entregada**: el cliente la ve en su pedido y le llega por correo.
+4. Con el pago confirmado y la ficha completa, la galería le pide a WordPress el borrador de la invitación (importador `ga/v1/integration/purchase`) y el pedido pasa a **en preparación**. Si falla, se reintenta desde `/panel/administracion`.
+5. La invitación se termina y se activa en WordPress. La entrega (URL final, estado **entregada** y correo al cliente) la registra el complemento de WordPress por el puente, o NewTech a mano en `/panel/administracion`. El correo sale una sola vez por URL.
+
+### Puente con WordPress (`wp-bridge`)
+
+Función `https://TU-PROJECT-REF.supabase.co/functions/v1/wp-bridge`, para el complemento GA Checkout Bridge. Cada pedido se firma con `INVITACIONES_WORDPRESS_SECRET`: cabeceras `X-GA-Timestamp` (epoch de 10 dígitos, ±300 s) y `X-GA-Signature` (HMAC-SHA256 hex de `timestamp + "." + cuerpo crudo`). WordPress nunca recibe claves de Supabase.
+
+| Ruta | Qué hace |
+| --- | --- |
+| `POST /v1/orders/list` | Pedidos `pagada`/`preparando` con ficha completa, invitación y sin vínculo con WordPress. Paginado con `cursor` (máx. 100). |
+| `POST /v1/orders/{id}/preparing` | Vincula `wordpress_event_id` y `wordpress_url`, y pasa el pedido a `preparando`. Idempotente. |
+| `POST /v1/orders/{id}/delivered` | Guarda la URL pública, pasa a `entregada` y avisa al cliente una vez. Otra URL distinta responde `409 url_conflict`. |
+
+Los errores vienen como `{ "code", "message" }` (`invalid_request`, `invalid_signature`, `order_not_found`, `invalid_state`, `already_linked`, `url_conflict`, `incomplete_order`, `invitation_not_included`, `invalid_url`, `internal_error`, `temporarily_unavailable`).
 
 La pantalla de administración solo aparece para los emails de `TRANSFER_ADMIN_EMAILS`, y la función `administrar-transferencias` vuelve a validar la sesión en cada llamada: ocultar o alterar la pantalla no concede permisos.
