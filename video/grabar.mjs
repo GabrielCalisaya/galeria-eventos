@@ -1,9 +1,14 @@
 // Graba video/promo.html cuadro por cuadro y arma el MP4 vertical (1080x1920, 30 fps).
 // Uso: node video/grabar.mjs   →   salida/galeria-en-vivo-promo.mp4 y salida/portada.jpg
-import { chromium } from 'playwright';
-import QRCode from 'qrcode';
+import { createRequire } from 'node:module';
 import { mkdir, readFile, rm } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
+
+// Las herramientas se instalan aparte (ver .github/workflows/video.yml) para no tocar el proyecto.
+const requerir = createRequire((process.env.NODE_PATH || '/tmp/herramientas/node_modules') + '/');
+const { chromium } = requerir('playwright');
+const QRCode = requerir('qrcode');
+const ffmpeg = requerir('ffmpeg-static');
 
 const FPS = 30;
 const DURACION = 30;
@@ -41,7 +46,7 @@ await pagina.evaluate((t) => window.render(t), 28.5);
 await pagina.screenshot({ path: 'salida/portada.jpg', type: 'jpeg', quality: 92 });
 await navegador.close();
 
-execFileSync('ffmpeg', [
+execFileSync(ffmpeg, [
   '-y', '-loglevel', 'error',
   '-framerate', String(FPS), '-i', 'salida/cuadros/%04d.jpg',
   '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100',

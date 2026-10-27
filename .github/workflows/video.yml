@@ -15,6 +15,9 @@ permissions:
 jobs:
   video:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      DEBIAN_FRONTEND: noninteractive
     steps:
       - uses: actions/checkout@v4
 
@@ -24,12 +27,13 @@ jobs:
 
       - name: Preparar herramientas
         run: |
-          which ffmpeg || (sudo apt-get update -q && sudo apt-get install -y -q ffmpeg)
-          npm install --no-save --no-audit --no-fund playwright@1.48.2 qrcode@1.5.4
+          mkdir -p /tmp/herramientas && cd /tmp/herramientas
+          npm init -y >/dev/null
+          npm install --no-audit --no-fund playwright@1.48.2 qrcode@1.5.4 ffmpeg-static@5.2.0
           npx --yes playwright@1.48.2 install --with-deps chromium
 
       - name: Grabar
-        run: node video/grabar.mjs
+        run: NODE_PATH=/tmp/herramientas/node_modules node video/grabar.mjs
 
       - name: Guardar en la rama video-salida
         run: |
