@@ -96,7 +96,7 @@ export default function Contratar() {
 
   return (
     <main className="compra-pagina">
-      <header className="compra-barra"><Marca /><Link className="compra-volver" to="/">Volver</Link></header>
+      <header className="compra-barra"><Marca /><Link className="compra-volver" to={sesion && !esAnonima(sesion) ? '/panel' : '/'}>{sesion && !esAnonima(sesion) ? 'Mis eventos' : 'Volver'}</Link></header>
       <div className="compra-cabecera"><p className="etiqueta centrada">Tu evento, a tu manera</p><h1>Armá tu propuesta</h1><p>Elegí lo que necesitás. Vas a ver el precio actualizado antes de pagar.</p></div>
       <form className="compra-layout" onSubmit={comprar}>
         <section className="compra-formularios" aria-label="Productos y datos del evento">

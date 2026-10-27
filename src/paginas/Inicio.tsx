@@ -4,6 +4,7 @@ import { FOTOS_DEMO } from '../lib/demo';
 import { formatearPrecio, INCLUYE, usePrecios, type PrecioPack } from '../lib/pagos';
 import { linkWhatsappNegocio, NEGOCIO } from '../lib/negocio';
 import { MUESTRAS_INVITACIONES } from '../lib/contacto';
+import { esAnonima, useSesion } from '../lib/sesion';
 
 const PRECIOS_RESPALDO: PrecioPack[] = [
   { pack: 'basico', nombre: 'Básico', descripcion: '', precio: 25000, moneda: 'ARS', limite_fotos: 1500, meses_album: 6, orden: 1 },
@@ -67,6 +68,8 @@ const PREGUNTAS = [
 ];
 
 export default function Inicio() {
+  const sesion = useSesion();
+  const conCuenta = Boolean(sesion) && !esAnonima(sesion);
   const precios = usePrecios();
   const lista = precios && precios.length ? precios : PRECIOS_RESPALDO;
   const muestra = FOTOS_DEMO.slice(0, 9);
@@ -91,9 +94,15 @@ export default function Inicio() {
               <Link className="boton boton-primario boton-grande" to="/contratar">
                 Crear mi galería
               </Link>
-              <Link className="boton boton-grande" to="/demo">
-                Ver la demo
-              </Link>
+              {conCuenta ? (
+                <Link className="boton boton-grande" to="/panel">
+                  Ir a mis eventos
+                </Link>
+              ) : (
+                <Link className="boton boton-grande" to="/demo">
+                  Ver la demo
+                </Link>
+              )}
             </div>
             <ul className="hero-garantias">
               <li>✓ Sin apps ni registro para los invitados</li>
