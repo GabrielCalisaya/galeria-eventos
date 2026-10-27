@@ -88,7 +88,7 @@ export default function Inicio() {
               proyectás en el salón y te las llevás todas al final.
             </p>
             <div className="acciones">
-              <Link className="boton boton-primario boton-grande" to="/entrar">
+              <Link className="boton boton-primario boton-grande" to="/contratar">
                 Crear mi galería
               </Link>
               <Link className="boton boton-grande" to="/demo">
@@ -230,7 +230,7 @@ export default function Inicio() {
                     Ver muestras de invitaciones ↗
                   </a>
                 )}
-                <Link className={p.pack === 'experiencia' ? 'boton boton-primario' : 'boton'} to="/entrar">
+                <Link className={p.pack === 'experiencia' ? 'boton boton-primario' : 'boton'} to={`/contratar?pack=${p.pack}`}>
                   Elegir {p.nombre}
                 </Link>
               </article>
@@ -290,7 +290,7 @@ export default function Inicio() {
             <h2>¿Tenés fecha? Dejá todo listo hoy.</h2>
             <p>Creá tu galería en minutos o escribinos y te ayudamos a armarla.</p>
             <div className="acciones centradas">
-              <Link className="boton boton-primario boton-grande" to="/entrar">
+              <Link className="boton boton-primario boton-grande" to="/contratar">
                 Crear mi galería
               </Link>
               <a className="boton boton-grande boton-claro" href={linkWhatsappNegocio()} target="_blank" rel="noreferrer">

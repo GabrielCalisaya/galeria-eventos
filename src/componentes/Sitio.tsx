@@ -29,7 +29,7 @@ export function CabeceraSitio() {
               </NavLink>
             ),
           )}
-          <Link className="boton boton-primario nav-cta" to="/entrar" onClick={() => setAbierto(false)}>
+          <Link className="boton boton-primario nav-cta" to="/contratar" onClick={() => setAbierto(false)}>
             Crear mi galería
           </Link>
         </nav>

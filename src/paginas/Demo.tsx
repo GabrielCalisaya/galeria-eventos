@@ -49,7 +49,7 @@ export default function Demo() {
           <Link to="/demo/pantalla" className="boton">
             Ver la pantalla del salón
           </Link>
-          <Link to="/entrar" className="boton boton-primario">
+          <Link to="/contratar" className="boton boton-primario">
             Crear mi galería
           </Link>
         </div>
