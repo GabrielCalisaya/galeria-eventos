@@ -15,7 +15,6 @@ import RutaAnfitrion from './componentes/RutaAnfitrion';
 import Contratar from './paginas/Contratar';
 import CompraEvento from './paginas/CompraEvento';
 import Administracion from './paginas/Administracion';
-import AdministrarInvitaciones from './paginas/AdministrarInvitaciones';
 
 export default function App() {
   if (configFaltante) {
@@ -48,7 +47,7 @@ export default function App() {
         <Route path="/panel" element={<MisEventos />} />
         <Route path="/panel/administracion" element={<Administracion />} />
         <Route path="/panel/administracion/transferencias" element={<Navigate to="/panel/administracion" replace />} />
-        <Route path="/panel/administracion/invitaciones" element={<AdministrarInvitaciones />} />
+        <Route path="/panel/administracion/invitaciones" element={<Navigate to="/panel/administracion" replace />} />
         <Route path="/panel/compra/:id" element={<CompraEvento />} />
         {/* Las galerías nuevas se crean desde el checkout; se mantiene la ruta vieja por enlaces guardados. */}
         <Route path="/panel/nuevo" element={<Navigate to="/contratar" replace />} />

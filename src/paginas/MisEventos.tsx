@@ -59,7 +59,7 @@ export default function MisEventos() {
             Crear evento
           </Link>
         </div>
-        {esAdmin && <p><Link to="/panel/administracion">Administración de pedidos</Link> · <Link to="/panel/administracion/invitaciones">Preparación de invitaciones</Link></p>}
+        {esAdmin && <p><Link to="/panel/administracion">Administración de pedidos</Link></p>}
 
         {error && <p className="error" role="alert">No se pudieron cargar tus eventos. Recargá la página.</p>}
         {eventos === null && <div className="cargando" aria-busy="true" />}
