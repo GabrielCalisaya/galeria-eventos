@@ -35,7 +35,7 @@ export default function MisEventos() {
             Crear evento
           </Link>
         </div>
-        <p><Link to="/panel/administracion/transferencias">Administrar transferencias pendientes</Link></p>
+        <p><Link to="/panel/administracion/transferencias">Administrar transferencias pendientes</Link> · <Link to="/panel/administracion/invitaciones">Administrar invitaciones compradas</Link></p>
 
         {error && <p className="error" role="alert">No se pudieron cargar tus eventos. Recargá la página.</p>}
         {eventos === null && <div className="cargando" aria-busy="true" />}

@@ -16,6 +16,7 @@ import RutaAnfitrion from './componentes/RutaAnfitrion';
 import Contratar from './paginas/Contratar';
 import CompraEvento from './paginas/CompraEvento';
 import AdministrarTransferencias from './paginas/AdministrarTransferencias';
+import AdministrarInvitaciones from './paginas/AdministrarInvitaciones';
 
 export default function App() {
   if (configFaltante) {
@@ -47,6 +48,7 @@ export default function App() {
       <Route element={<RutaAnfitrion />}>
         <Route path="/panel" element={<MisEventos />} />
         <Route path="/panel/administracion/transferencias" element={<AdministrarTransferencias />} />
+        <Route path="/panel/administracion/invitaciones" element={<AdministrarInvitaciones />} />
         <Route path="/panel/compra/:id" element={<CompraEvento />} />
         <Route path="/panel/nuevo" element={<NuevoEvento />} />
         <Route path="/panel/:id" element={<PanelEvento />} />

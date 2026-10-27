@@ -1,6 +1,9 @@
 import { clienteAdmin, cors, respuesta, usuarioDelPedido } from '../_shared/comun.ts';
+import { sincronizarInvitacion } from '../_shared/invitaciones-wordpress.ts';
 
 const limites: Record<string, number> = {
+  person_one: 80,
+  person_two: 80,
   nombres: 160,
   hora: 80,
   lugar: 160,
@@ -18,6 +21,8 @@ const limites: Record<string, number> = {
   galeria_bienvenida: 160,
   notas: 1500,
   preguntas_trivia: 3000,
+  quiz_heading: 100,
+  quiz_questions: 3000,
 };
 
 Deno.serve(async (req) => {
@@ -38,7 +43,7 @@ Deno.serve(async (req) => {
   if (sesion.esAnonimo) return respuesta(403, { error: 'Entrá con tu cuenta para completar los datos.' });
 
   const { data: compra } = await admin.from('compras')
-    .select('id,user_id,estado,gallery_pack,invitation_tier,titulo_evento')
+    .select('id,user_id,estado,gallery_pack,invitation_tier,tipo_invitacion,titulo_evento,datos_completos')
     .eq('id', body.compra_id)
     .maybeSingle();
   if (!compra || compra.user_id !== sesion.userId) return respuesta(404, { error: 'No encontramos esa compra.' });
@@ -61,21 +66,36 @@ Deno.serve(async (req) => {
       return respuesta(400, { error: 'El enlace del mapa debe ser una URL válida.' });
     }
   }
+  if (compra.invitation_tier !== 'deluxe') { delete datos.quiz_heading; delete datos.quiz_questions; }
   if (datos.rsvp && !['whatsapp', 'formulario', 'sin_confirmacion'].includes(datos.rsvp)) {
     return respuesta(400, { error: 'Elegí una modalidad de confirmación válida.' });
   }
-  if (body.completar && compra.invitation_tier) {
-    for (const field of ['nombres', 'hora', 'lugar', 'direccion']) {
-      if (!datos[field]) return respuesta(400, { error: 'Para enviar la ficha de invitación completá nombres, hora, lugar y dirección.' });
-    }
+  const fichaCompleta = Boolean(body.completar || compra.datos_completos);
+  if (fichaCompleta && compra.invitation_tier) {
+    const nombrePrincipal = datos.person_one || datos.nombres?.split(/\s*(?:&|\by\b)\s*/i)[0];
+    const nombreSecundario = datos.person_two || datos.nombres?.split(/\s*(?:&|\by\b)\s*/i)[1];
+    if (!nombrePrincipal || (compra.tipo_invitacion === 'wedding' && !nombreSecundario) || !datos.hora || !datos.lugar || !datos.direccion) return respuesta(400, { error: 'Completá los nombres, el horario, el lugar y la dirección. Para una boda necesitamos ambos nombres.' });
+    if (datos.rsvp === 'whatsapp' && !datos.whatsapp) return respuesta(400, { error: 'Agregá el WhatsApp con código de país para recibir confirmaciones.' });
+  }
+  if (fichaCompleta && compra.invitation_tier === 'deluxe') {
+    if (datos.quiz_heading && datos.quiz_heading.length > 100) return respuesta(400, { error: 'El título del quiz no puede superar 100 caracteres.' });
+    let preguntas: unknown; try { preguntas = JSON.parse(datos.quiz_questions ?? ''); } catch { return respuesta(400, { error: 'Completá las tres preguntas del quiz Deluxe.' }); }
+    if (!Array.isArray(preguntas) || preguntas.length !== 3) return respuesta(400, { error: 'El quiz Deluxe necesita tres preguntas.' });
+    const validas = preguntas.every((item) => item && typeof item === 'object' && typeof item.question === 'string' && item.question.trim().length > 0 && item.question.length <= 160 && Array.isArray(item.answers) && item.answers.length === 3 && item.answers.every((answer: unknown) => typeof answer === 'string' && answer.trim().length > 0 && answer.length <= 80) && Number.isInteger(item.correct) && item.correct >= 0 && item.correct <= 2);
+    if (!validas) return respuesta(400, { error: 'Cada pregunta necesita un enunciado, tres respuestas y una respuesta correcta.' });
+    datos.quiz_questions = JSON.stringify(preguntas.map((item) => ({ question: item.question.trim(), answers: item.answers.map((answer: string) => answer.trim()), correct: item.correct })));
+    datos.quiz_heading = datos.quiz_heading?.trim() || '¿Cuánto conocés esta celebración?';
   }
   if (datos.whatsapp && !/^[0-9+ ()-]{8,20}$/.test(datos.whatsapp)) return respuesta(400, { error: 'Ingresá un número de WhatsApp válido.' });
 
   const { error } = await admin.from('compras').update({
     datos_invitacion: datos,
-    datos_completos: Boolean(body.completar),
+    datos_completos: fichaCompleta,
     updated_at: new Date().toISOString(),
   }).eq('id', compra.id).eq('user_id', sesion.userId);
   if (error) return respuesta(500, { error: 'No se pudieron guardar los datos. Intentá de nuevo.' });
-  return respuesta(200, { guardado: true, completo: Boolean(body.completar) });
+  const sync = ['pagada', 'preparando'].includes(compra.estado) && compra.invitation_tier && fichaCompleta
+    ? await sincronizarInvitacion(admin, compra.id)
+    : null;
+  return respuesta(200, { guardado: true, completo: fichaCompleta, preparacion: sync?.ok ? 'preparando' : sync ? 'pendiente' : undefined, aviso_preparacion: sync && !sync.ok ? sync.error : undefined });
 });

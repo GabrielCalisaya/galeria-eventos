@@ -9,6 +9,7 @@ import './compra-evento.css';
 
 type Nivel = 'standard' | 'premium' | 'deluxe';
 type Pack = 'basico' | 'experiencia' | 'completo';
+type TipoInvitacion = 'wedding' | 'birthday' | 'xv';
 type Cotizacion = { subtotal: number; descuento: number; total: number; moneda: string; productos: Array<{ tipo: string; codigo: string; nombre: string; precio: number }> };
 const dinero = (n: number) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n);
 const tipos = Object.entries(NOMBRES_TIPO) as [TipoEvento, string][];
@@ -24,6 +25,7 @@ export default function Contratar() {
   const [params] = useSearchParams();
   const [titulo, setTitulo] = useState(params.get('titulo') ?? '');
   const [tipo, setTipo] = useState<TipoEvento>((tipos.some(([key]) => key === params.get('tipo')) ? params.get('tipo') : 'casamiento') as TipoEvento);
+  const [tipoInvitacion, setTipoInvitacion] = useState<TipoInvitacion>((['wedding', 'birthday', 'xv'].includes(params.get('formato') ?? '') ? params.get('formato') : params.get('tipo') === 'quince' ? 'xv' : params.get('tipo') === 'cumpleanos' ? 'birthday' : 'wedding') as TipoInvitacion);
   const [fecha, setFecha] = useState(params.get('fecha') ?? '');
   const [pack, setPack] = useState<Pack | ''>((['basico', 'experiencia', 'completo'].includes(params.get('pack') ?? '') ? params.get('pack') : '') as Pack | '');
   const [nivel, setNivel] = useState<Nivel | ''>((['standard', 'premium', 'deluxe'].includes(params.get('nivel') ?? '') ? params.get('nivel') : '') as Nivel | '');
@@ -37,8 +39,12 @@ export default function Contratar() {
     const q = new URLSearchParams();
     if (pack) q.set('pack', pack);
     if (nivel) q.set('nivel', nivel);
+    if (nivel) q.set('formato', tipoInvitacion);
+    if (titulo.trim()) q.set('titulo', titulo.trim());
+    if (tipo) q.set('tipo', tipo);
+    if (fecha) q.set('fecha', fecha);
     return `/contratar?${q.toString()}`;
-  }, [pack, nivel]);
+  }, [pack, nivel, tipoInvitacion, titulo, tipo, fecha]);
 
   useEffect(() => {
     setError('');
@@ -63,7 +69,7 @@ export default function Contratar() {
     if (!pack && !nivel) return setError('Elegí al menos una invitación o un paquete de galería.');
     if (!sesion || esAnonima(sesion)) return navegar(`/entrar?modo=crear&next=${encodeURIComponent(retorno)}`);
     setEnviando(true);
-    const scope = `checkout:${encodeURIComponent([pack, nivel, titulo.trim(), tipo, fecha].join('|'))}`;
+    const scope = `checkout:${encodeURIComponent([pack, nivel, nivel ? tipoInvitacion : '', titulo.trim(), tipo, fecha].join('|'))}`;
     let idempotencyKey = '';
     try { idempotencyKey = sessionStorage.getItem(scope) ?? ''; } catch { /* almacenamiento opcional */ }
     if (!idempotencyKey) idempotencyKey = crypto.randomUUID();
@@ -72,7 +78,7 @@ export default function Contratar() {
       body: {
         idempotency_key: idempotencyKey,
         event_title: titulo.trim(), event_type: tipo, event_date: fecha || null,
-        gallery_pack: pack || null, invitation_tier: nivel || null, payment_method: metodo,
+        gallery_pack: pack || null, invitation_tier: nivel || null, invitation_type: nivel ? tipoInvitacion : null, payment_method: metodo,
       },
     });
     setEnviando(false);
@@ -125,8 +131,9 @@ export default function Contratar() {
             <label className="campo"><span>Nombre del evento</span><input required maxLength={120} value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Sofía y Martín" /></label>
             <div className="campos-dobles">
               <label className="campo"><span>Tipo de evento</span><select value={tipo} onChange={(e) => setTipo(e.target.value as TipoEvento)}>{tipos.map(([value, name]) => <option key={value} value={value}>{name}</option>)}</select></label>
-              <label className="campo"><span>Fecha <small>Opcional</small></span><input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} /></label>
+              <label className="campo"><span>Fecha {!nivel && <small>Opcional</small>}</span><input type="date" required={Boolean(nivel)} value={fecha} onChange={(e) => setFecha(e.target.value)} /></label>
             </div>
+            {nivel && <label className="campo"><span>Formato de invitación</span><select value={tipoInvitacion} onChange={(e) => setTipoInvitacion(e.target.value as TipoInvitacion)}><option value="wedding">Boda o aniversario</option><option value="xv">Fiesta de 15</option><option value="birthday">Cumpleaños</option></select><small>Esto prepara la plantilla y los campos correctos para tu evento.</small></label>}
           </div>
 
           <div className="compra-bloque">

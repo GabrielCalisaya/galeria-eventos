@@ -45,7 +45,7 @@ export default function AdministrarTransferencias() {
       setError(data?.error ?? 'No se pudo confirmar la transferencia.');
       return;
     }
-    setAviso(`Transferencia de “${compra.titulo_evento}” confirmada.${compra.event_id ? ' La galería quedó activada.' : ''}`);
+    setAviso(`Transferencia de “${compra.titulo_evento}” confirmada.${compra.event_id ? ' La galería quedó activada.' : ''}${data?.email_enviado === false ? ' No pudimos enviar el correo de confirmación.' : ' Se envió el correo de confirmación.'}`);
     await cargar();
   }
 

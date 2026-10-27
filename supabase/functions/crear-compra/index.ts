@@ -24,6 +24,7 @@ Deno.serve(async (req) => {
     event_date?: string | null;
     gallery_pack?: string | null;
     invitation_tier?: string | null;
+    invitation_type?: 'wedding' | 'birthday' | 'xv' | null;
     payment_method?: 'mercado_pago' | 'transferencia';
   };
   try {
@@ -51,6 +52,9 @@ Deno.serve(async (req) => {
   if (!title || title.length > 120) return respuesta(400, { error: 'Ingresá el nombre del evento (hasta 120 caracteres).' });
   if (!tiposEvento.has(body.event_type ?? '')) return respuesta(400, { error: 'Elegí un tipo de evento válido.' });
   if (body.event_date && !fechaValida(body.event_date)) return respuesta(400, { error: 'Ingresá una fecha válida.' });
+  const tipoPlantilla = body.invitation_tier ? body.invitation_type : null;
+  if (body.invitation_tier && !['wedding', 'birthday', 'xv'].includes(tipoPlantilla ?? '')) return respuesta(400, { error: 'Elegí si la invitación será para boda, cumpleaños o fiesta de 15.' });
+  if (body.invitation_tier && !body.event_date) return respuesta(400, { error: 'Elegí la fecha del evento para preparar la invitación.' });
 
   const quote = await cotizarCompra(admin, body);
   if (typeof quote === 'string') return respuesta(400, { error: quote });
@@ -58,7 +62,7 @@ Deno.serve(async (req) => {
   // Una repetición del mismo envío retoma la misma compra y evita crear dos eventos/pagos.
   const { data: existente } = await admin
     .from('compras')
-    .select('id,event_id,total,moneda,estado,titulo_evento,tipo_evento,fecha_evento,gallery_pack,invitation_tier')
+    .select('id,event_id,total,moneda,estado,titulo_evento,tipo_evento,tipo_invitacion,fecha_evento,gallery_pack,invitation_tier')
     .eq('user_id', sesion.userId)
     .eq('idempotency_key', body.idempotency_key)
     .maybeSingle();
@@ -66,7 +70,7 @@ Deno.serve(async (req) => {
   let eventId: string | null = null;
   if (existente) {
     if (existente.titulo_evento !== title || existente.tipo_evento !== body.event_type || existente.fecha_evento !== (body.event_date || null) ||
-      existente.gallery_pack !== quote.gallery_pack || existente.invitation_tier !== quote.invitation_tier) {
+      existente.gallery_pack !== quote.gallery_pack || existente.invitation_tier !== quote.invitation_tier || existente.tipo_invitacion !== tipoPlantilla) {
       return respuesta(409, { error: 'Los datos del pedido cambiaron. Actualizá el checkout antes de volver a intentar.' });
     }
     const { data: pagoExistente } = await admin
@@ -136,6 +140,7 @@ Deno.serve(async (req) => {
       fecha_evento: body.event_date || null,
       gallery_pack: quote.gallery_pack,
       invitation_tier: quote.invitation_tier,
+      tipo_invitacion: tipoPlantilla,
       productos: quote.productos,
       subtotal: quote.subtotal,
       descuento: quote.descuento,
