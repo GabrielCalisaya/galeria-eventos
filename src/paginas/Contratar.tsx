@@ -27,6 +27,8 @@ export default function Contratar() {
   const [fecha, setFecha] = useState(params.get('fecha') ?? '');
   const [pack, setPack] = useState<Pack | ''>((['basico', 'experiencia', 'completo'].includes(params.get('pack') ?? '') ? params.get('pack') : '') as Pack | '');
   const [nivel, setNivel] = useState<Nivel | ''>((['standard', 'premium', 'deluxe'].includes(params.get('nivel') ?? '') ? params.get('nivel') : '') as Nivel | '');
+  // Borrador creado antes desde el panel: la compra lo activa en lugar de crear otro evento.
+  const eventoExistente = /^[0-9a-f-]{36}$/i.test(params.get('evento') ?? '') ? params.get('evento') : null;
   const [metodo, setMetodo] = useState<'mercado_pago' | 'transferencia'>('mercado_pago');
   const [cotizacion, setCotizacion] = useState<Cotizacion | null>(null);
   const [cargandoPrecio, setCargandoPrecio] = useState(false);
@@ -37,8 +39,14 @@ export default function Contratar() {
     const q = new URLSearchParams();
     if (pack) q.set('pack', pack);
     if (nivel) q.set('nivel', nivel);
+    if (eventoExistente) {
+      q.set('evento', eventoExistente);
+      if (titulo.trim()) q.set('titulo', titulo.trim());
+      q.set('tipo', tipo);
+      if (fecha) q.set('fecha', fecha);
+    }
     return `/contratar?${q.toString()}`;
-  }, [pack, nivel]);
+  }, [pack, nivel, eventoExistente, titulo, tipo, fecha]);
 
   useEffect(() => {
     setError('');
@@ -63,7 +71,7 @@ export default function Contratar() {
     if (!pack && !nivel) return setError('Elegí al menos una invitación o un paquete de galería.');
     if (!sesion || esAnonima(sesion)) return navegar(`/entrar?modo=crear&next=${encodeURIComponent(retorno)}`);
     setEnviando(true);
-    const scope = `checkout:${encodeURIComponent([pack, nivel, titulo.trim(), tipo, fecha].join('|'))}`;
+    const scope = `checkout:${encodeURIComponent([pack, nivel, titulo.trim(), tipo, fecha, eventoExistente ?? ''].join('|'))}`;
     let idempotencyKey = '';
     try { idempotencyKey = sessionStorage.getItem(scope) ?? ''; } catch { /* almacenamiento opcional */ }
     if (!idempotencyKey) idempotencyKey = crypto.randomUUID();
@@ -73,6 +81,7 @@ export default function Contratar() {
         idempotency_key: idempotencyKey,
         event_title: titulo.trim(), event_type: tipo, event_date: fecha || null,
         gallery_pack: pack || null, invitation_tier: nivel || null, payment_method: metodo,
+        event_id: eventoExistente,
       },
     });
     setEnviando(false);

@@ -245,7 +245,28 @@ export default function PanelEvento() {
               </div>
             </section>
           ) : (
-            <ElegirPack evento={evento} modo="activar" estadoRetorno={retornoPago} />
+            <section className="tarjeta activar">
+              <p className="etiqueta">Último paso</p>
+              <h2>Elegí tu pack y activá la galería</h2>
+              <p className="ayuda">
+                Podés pagar con Mercado Pago o por transferencia, y sumar la invitación digital si querés. El QR empieza a funcionar
+                apenas se confirma el pago.
+              </p>
+              <div className="acciones">
+                <Link
+                  className="boton boton-primario"
+                  to={`/contratar?${new URLSearchParams({
+                    evento: evento.id,
+                    titulo: evento.titulo,
+                    tipo: evento.tipo,
+                    ...(evento.fecha ? { fecha: evento.fecha } : {}),
+                    pack: 'basico',
+                  }).toString()}`}
+                >
+                  Elegir pack y pagar
+                </Link>
+              </div>
+            </section>
           )
         ) : (
           <>

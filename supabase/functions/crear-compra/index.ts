@@ -23,6 +23,8 @@ Deno.serve(async (req) => {
     event_title?: string;
     event_type?: string;
     event_date?: string | null;
+    /** Borrador ya creado desde el panel (flujo anterior) que esta compra activa, en lugar de crear otro evento. */
+    event_id?: string | null;
     gallery_pack?: string | null;
     invitation_tier?: string | null;
     payment_method?: 'mercado_pago' | 'transferencia';
@@ -55,6 +57,20 @@ Deno.serve(async (req) => {
 
   const quote = await cotizarCompra(admin, body);
   if (typeof quote === 'string') return respuesta(400, { error: quote });
+
+  // Borrador existente: tiene que ser del usuario, seguir en borrador y no tener otro pedido abierto.
+  let eventoExistente: string | null = null;
+  if (body.event_id) {
+    if (typeof body.event_id !== 'string' || !/^[0-9a-f-]{36}$/i.test(body.event_id)) return respuesta(400, { error: 'La referencia del evento no es válida.' });
+    if (!quote.gallery_pack) return respuesta(400, { error: 'Para activar esta galería elegí un paquete de galería.' });
+    const { data: ev } = await admin.from('events').select('id,owner_id,estado').eq('id', body.event_id).maybeSingle();
+    if (!ev || ev.owner_id !== sesion.userId) return respuesta(404, { error: 'No encontramos ese evento en tu cuenta.' });
+    if (ev.estado !== 'borrador') return respuesta(409, { error: 'Esa galería ya está activa.' });
+    const { data: abierto } = await admin.from('compras').select('id').eq('event_id', ev.id)
+      .in('estado', ['pendiente_pago', 'transferencia_pendiente']).neq('idempotency_key', body.idempotency_key).limit(1).maybeSingle();
+    if (abierto) return respuesta(409, { error: 'Este evento ya tiene un pedido en curso. Abrilo desde el panel del evento.' });
+    eventoExistente = ev.id;
+  }
 
   // Una repetición del mismo envío retoma la misma compra y evita crear dos eventos/pagos.
   const { data: existente } = await admin
@@ -99,7 +115,9 @@ Deno.serve(async (req) => {
     if (errorReabrir) return respuesta(500, { error: 'No se pudo recuperar el pedido para reintentar el pago.' });
   }
 
-  if (!compra && quote.gallery_pack) {
+  if (!compra && eventoExistente) {
+    eventId = eventoExistente;
+  } else if (!compra && quote.gallery_pack) {
     let created: { id: string } | null = null;
     for (let attempt = 0; attempt < 3 && !created; attempt++) {
       const slug = crypto.randomUUID().replaceAll('-', '').slice(0, 20);
@@ -147,7 +165,7 @@ Deno.serve(async (req) => {
       .select('id,event_id,total,moneda,estado')
       .single();
     if (errorCompra || !nuevaCompra) {
-      if (eventId) await admin.from('events').delete().eq('id', eventId).eq('owner_id', sesion.userId);
+      if (eventId && eventId !== eventoExistente) await admin.from('events').delete().eq('id', eventId).eq('owner_id', sesion.userId);
       return respuesta(500, { error: 'No se pudo guardar la compra. Intentá de nuevo.' });
     }
     compra = nuevaCompra;
