@@ -23,7 +23,7 @@ async function avisarTransferenciaConfirmada(
   const email = usuario?.user?.email ?? '';
   const nombre = (usuario?.user?.user_metadata?.nombre as string | undefined) ?? '';
   const pasos = [
-    compra.event_id && compra.gallery_pack ? 'Tu galería ya está activa: el QR funciona desde ahora.' : '',
+    compra.event_id && compra.gallery_pack ? 'Tu galería ya está activa con el pack que elegiste.' : '',
     data.invitation_tier ? 'Completá la ficha de tu evento para que preparemos la invitación.' : '',
   ].filter(Boolean).map((p) => `<li style="margin-bottom:6px">${escapar(p)}</li>`).join('');
   return enviarCorreo(
@@ -225,7 +225,7 @@ Deno.serve(async (req) => {
       pack: compra.gallery_pack,
       limite_fotos: precio.limite_fotos,
       vence_album: vence.toISOString().slice(0, 10),
-    }).eq('id', compra.event_id).eq('estado', 'borrador');
+    }).eq('id', compra.event_id).in('estado', ['borrador', 'activo']); // activo: mejora de pack
     if (errorActivar) {
       await admin.from('compras').update({ estado: 'transferencia_pendiente', updated_at: new Date().toISOString() }).eq('id', compra.id).eq('estado', 'pagada');
       await admin.from('compra_pagos').update({ estado: 'pendiente', detalle: 'confirmación revertida por error al activar la galería', updated_at: new Date().toISOString() }).eq('id', pago.id).eq('estado', 'aprobado');

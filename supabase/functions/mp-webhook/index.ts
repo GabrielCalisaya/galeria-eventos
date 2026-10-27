@@ -139,6 +139,7 @@ Deno.serve(async (req) => {
     return ok();
   }
 
+  // Pagos del flujo anterior (tabla pagos, sin pedido): se siguen procesando por si queda alguno en curso.
   const { data: pago } = await admin.from('pagos').select('id, event_id, pack, monto, moneda, estado').eq('id', pagoId).maybeSingle();
   if (!pago) return ok();
 

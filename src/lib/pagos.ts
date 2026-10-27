@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { supabase } from './supabase';
-import { invocar, irAMercadoPago } from './funciones';
 import type { Evento } from './tipos';
 
 export type PrecioPack = {
@@ -28,12 +27,6 @@ export function usePrecios() {
 
 export function formatearPrecio(monto: number, moneda = 'ARS'): string {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency: moneda, maximumFractionDigits: 0 }).format(monto);
-}
-
-/** Crea el pago de la mejora de pack y lleva al cliente a Mercado Pago. */
-export async function irAPagar(eventId: string, pack: string) {
-  const { url } = await invocar<{ url: string }>('crear-pago', { event_id: eventId, pack });
-  irAMercadoPago(url);
 }
 
 /** Lo que trae cada pack, para mostrar en las tarjetas. */

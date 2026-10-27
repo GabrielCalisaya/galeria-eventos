@@ -1,5 +1,5 @@
 import { clienteAdmin, cors, respuesta, usuarioDelPedido } from '../_shared/comun.ts';
-import { cotizarCompra } from '../_shared/catalogo-compra.ts';
+import { cotizarCompra, type ProductoCotizado } from '../_shared/catalogo-compra.ts';
 import { ADMIN_EMAIL, enviarCorreo, escapar, linkWhatsapp, plantilla } from '../_shared/correo.ts';
 
 const MP_ACCESS_TOKEN = Deno.env.get('MP_ACCESS_TOKEN') ?? '';
@@ -25,6 +25,8 @@ Deno.serve(async (req) => {
     event_date?: string | null;
     /** Borrador ya creado desde el panel (flujo anterior) que esta compra activa, en lugar de crear otro evento. */
     event_id?: string | null;
+    /** true: mejora de pack de la galería activa `event_id` (se cobra la diferencia). */
+    mejora?: boolean;
     gallery_pack?: string | null;
     invitation_tier?: string | null;
     payment_method?: 'mercado_pago' | 'transferencia';
@@ -50,26 +52,66 @@ Deno.serve(async (req) => {
   if (typeof body.idempotency_key !== 'string' || body.idempotency_key.length < 16 || body.idempotency_key.length > 80) {
     return respuesta(400, { error: 'Actualizá la página e intentá de nuevo.' });
   }
-  const title = typeof body.event_title === 'string' ? body.event_title.trim() : '';
-  if (!title || title.length > 120) return respuesta(400, { error: 'Ingresá el nombre del evento (hasta 120 caracteres).' });
-  if (!tiposEvento.has(body.event_type ?? '')) return respuesta(400, { error: 'Elegí un tipo de evento válido.' });
-  if (body.event_date && !fechaValida(body.event_date)) return respuesta(400, { error: 'Ingresá una fecha válida.' });
-
-  const quote = await cotizarCompra(admin, body);
-  if (typeof quote === 'string') return respuesta(400, { error: quote });
-
-  // Borrador existente: tiene que ser del usuario, seguir en borrador y no tener otro pedido abierto.
+  let title = typeof body.event_title === 'string' ? body.event_title.trim() : '';
+  let eventType = body.event_type ?? '';
+  let eventDate: string | null = body.event_date || null;
+  let quote: ProductoCotizado;
   let eventoExistente: string | null = null;
-  if (body.event_id) {
+
+  if (body.mejora === true) {
+    // Mejora de pack de una galería activa: se paga la diferencia y se actualiza ese mismo evento.
     if (typeof body.event_id !== 'string' || !/^[0-9a-f-]{36}$/i.test(body.event_id)) return respuesta(400, { error: 'La referencia del evento no es válida.' });
-    if (!quote.gallery_pack) return respuesta(400, { error: 'Para activar esta galería elegí un paquete de galería.' });
-    const { data: ev } = await admin.from('events').select('id,owner_id,estado').eq('id', body.event_id).maybeSingle();
+    const { data: ev } = await admin.from('events').select('id,owner_id,estado,pack,titulo,tipo,fecha').eq('id', body.event_id).maybeSingle();
     if (!ev || ev.owner_id !== sesion.userId) return respuesta(404, { error: 'No encontramos ese evento en tu cuenta.' });
-    if (ev.estado !== 'borrador') return respuesta(409, { error: 'Esa galería ya está activa.' });
+    if (ev.estado !== 'activo') return respuesta(409, { error: 'Solo se puede mejorar el pack de una galería activa.' });
     const { data: abierto } = await admin.from('compras').select('id').eq('event_id', ev.id)
       .in('estado', ['pendiente_pago', 'transferencia_pendiente']).neq('idempotency_key', body.idempotency_key).limit(1).maybeSingle();
-    if (abierto) return respuesta(409, { error: 'Este evento ya tiene un pedido en curso. Abrilo desde el panel del evento.' });
+    if (abierto) return respuesta(409, { error: 'Esta galería ya tiene un pedido en curso. Abrilo desde el panel del evento.' });
+    const { data: precios } = await admin.from('precios_pack').select('pack,nombre,precio,orden,activo');
+    const actual = precios?.find((p) => p.pack === ev.pack);
+    const objetivo = precios?.find((p) => p.pack === body.gallery_pack && p.activo);
+    if (!actual || !objetivo) return respuesta(400, { error: 'Ese pack no está disponible.' });
+    if (objetivo.orden <= actual.orden) return respuesta(409, { error: 'La galería ya tiene ese pack o uno mejor.' });
+    const monto = Math.max(1, Number(objetivo.precio) - Number(actual.precio));
+    // El pack Completo trae la invitación Estándar: con la mejora, el cliente recibe la ficha para completarla.
+    const conInvitacion = objetivo.pack === 'completo';
+    quote = {
+      gallery_pack: objetivo.pack as ProductoCotizado['gallery_pack'],
+      invitation_tier: conInvitacion ? 'standard' : null,
+      subtotal: monto,
+      descuento: 0,
+      total: monto,
+      moneda: 'ARS',
+      productos: [
+        { tipo: 'mejora', codigo: objetivo.pack, nombre: `Mejora a pack ${objetivo.nombre}`, precio: monto },
+        ...(conInvitacion ? [{ tipo: 'invitacion', codigo: 'standard', nombre: 'Invitación Estándar incluida', precio: 0 }] : []),
+      ],
+    };
+    title = ev.titulo;
+    eventType = ev.tipo;
+    eventDate = ev.fecha;
     eventoExistente = ev.id;
+  } else {
+    if (!title || title.length > 120) return respuesta(400, { error: 'Ingresá el nombre del evento (hasta 120 caracteres).' });
+    if (!tiposEvento.has(eventType)) return respuesta(400, { error: 'Elegí un tipo de evento válido.' });
+    if (eventDate && !fechaValida(eventDate)) return respuesta(400, { error: 'Ingresá una fecha válida.' });
+
+    const cotizacion = await cotizarCompra(admin, body);
+    if (typeof cotizacion === 'string') return respuesta(400, { error: cotizacion });
+    quote = cotizacion;
+
+    // Borrador existente: tiene que ser del usuario, seguir en borrador y no tener otro pedido abierto.
+    if (body.event_id) {
+      if (typeof body.event_id !== 'string' || !/^[0-9a-f-]{36}$/i.test(body.event_id)) return respuesta(400, { error: 'La referencia del evento no es válida.' });
+      if (!quote.gallery_pack) return respuesta(400, { error: 'Para activar esta galería elegí un paquete de galería.' });
+      const { data: ev } = await admin.from('events').select('id,owner_id,estado').eq('id', body.event_id).maybeSingle();
+      if (!ev || ev.owner_id !== sesion.userId) return respuesta(404, { error: 'No encontramos ese evento en tu cuenta.' });
+      if (ev.estado !== 'borrador') return respuesta(409, { error: 'Esa galería ya está activa.' });
+      const { data: abierto } = await admin.from('compras').select('id').eq('event_id', ev.id)
+        .in('estado', ['pendiente_pago', 'transferencia_pendiente']).neq('idempotency_key', body.idempotency_key).limit(1).maybeSingle();
+      if (abierto) return respuesta(409, { error: 'Este evento ya tiene un pedido en curso. Abrilo desde el panel del evento.' });
+      eventoExistente = ev.id;
+    }
   }
 
   // Una repetición del mismo envío retoma la misma compra y evita crear dos eventos/pagos.
@@ -82,7 +124,7 @@ Deno.serve(async (req) => {
   let compra: { id: string; event_id: string | null; total: number; moneda: string; estado: string } | null = null;
   let eventId: string | null = null;
   if (existente) {
-    if (existente.titulo_evento !== title || existente.tipo_evento !== body.event_type || existente.fecha_evento !== (body.event_date || null) ||
+    if (existente.titulo_evento !== title || existente.tipo_evento !== eventType || existente.fecha_evento !== eventDate ||
       existente.gallery_pack !== quote.gallery_pack || existente.invitation_tier !== quote.invitation_tier) {
       return respuesta(409, { error: 'Los datos del pedido cambiaron. Actualizá el checkout antes de volver a intentar.' });
     }
@@ -127,8 +169,8 @@ Deno.serve(async (req) => {
           owner_id: sesion.userId,
           slug,
           titulo: title,
-          fecha: body.event_date || null,
-          tipo: body.event_type,
+          fecha: eventDate,
+          tipo: eventType,
           estilo: {},
           pack: 'basico',
           estado: 'borrador',
@@ -151,8 +193,8 @@ Deno.serve(async (req) => {
       event_id: eventId,
       idempotency_key: body.idempotency_key,
       titulo_evento: title,
-      tipo_evento: body.event_type,
-      fecha_evento: body.event_date || null,
+      tipo_evento: eventType,
+      fecha_evento: eventDate,
       gallery_pack: quote.gallery_pack,
       invitation_tier: quote.invitation_tier,
       productos: quote.productos,
