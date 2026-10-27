@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { PieSitio } from '../componentes/Sitio';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import QRCode from 'qrcode';
@@ -31,9 +31,11 @@ export default function PanelEvento() {
   const [error, setError] = useState('');
 
   const [borrandoEvento, setBorrandoEvento] = useState(false);
-  const [params, setParams] = useSearchParams();
-  const retornoPago = params.get('pago');
-  const [recienPagado, setRecienPagado] = useState(false);
+  const [params] = useSearchParams();
+  // Al llegar desde un pedido recién pagado («Abrir la galería») se muestran los próximos pasos.
+  const recienPagado = params.get('bienvenida') === '1';
+  // Pedido del checkout unificado que creó este evento (si lo hay).
+  const [pedido, setPedido] = useState<{ id: string; estado: string; invitation_tier: string | null; datos_completos: boolean } | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -43,32 +45,15 @@ export default function PanelEvento() {
       .eq('id', id)
       .maybeSingle()
       .then(({ data }) => setEvento((data as Evento | null) ?? null));
+    supabase
+      .from('compras')
+      .select('id,estado,invitation_tier,datos_completos')
+      .eq('event_id', id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => setPedido((data as typeof pedido) ?? null));
   }, [id]);
-
-  // Al volver de Mercado Pago, se espera la confirmación del pago (llega por aviso del servidor).
-  const packAntes = useRef<string | null>(null);
-  useEffect(() => {
-    if (!id || retornoPago !== 'aprobado' || !evento) return;
-    if (packAntes.current === null) packAntes.current = `${evento.estado}-${evento.pack}`;
-    let intentos = 0;
-    const t = setInterval(async () => {
-      intentos++;
-      const { data } = await supabase.from('events').select('*').eq('id', id).maybeSingle();
-      const ev = data as Evento | null;
-      if (ev && `${ev.estado}-${ev.pack}` !== packAntes.current) {
-        clearInterval(t);
-        setEvento(ev);
-        avisar('¡Pago confirmado! La galería ya está lista.');
-        setRecienPagado(true);
-        setParams({}, { replace: true });
-      } else if (intentos >= 40) {
-        clearInterval(t);
-        setParams({ pago: 'pendiente' }, { replace: true });
-      }
-    }, 3000);
-    return () => clearInterval(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, retornoPago, evento?.id]);
 
   useEffect(() => {
     if (!evento) return;
@@ -215,18 +200,46 @@ export default function PanelEvento() {
         {evento.fecha && <p className="evento-meta">{formatearFecha(evento.fecha)}</p>}
 
         {evento.estado === 'borrador' ? (
-          retornoPago === 'aprobado' ? (
-            <section className="tarjeta activar confirmando" aria-live="polite">
-              <span className="girando" aria-hidden="true" />
-              <h2>Confirmando tu pago…</h2>
-              <p className="ayuda">Mercado Pago nos avisa en unos segundos. No cierres esta página.</p>
+          pedido && !['cancelada', 'reembolsada'].includes(pedido.estado) ? (
+            <section className="tarjeta activar">
+              <p className="etiqueta">Pedido en curso</p>
+              <h2>{pedido.estado === 'transferencia_pendiente' ? 'Esperando la confirmación de tu transferencia' : 'Tu galería se activa con el pago del pedido'}</h2>
+              <p className="ayuda">
+                Esta galería es parte de un pedido. Se activa sola cuando confirmamos el pago; no hace falta pagarla de nuevo acá.
+              </p>
+              <div className="acciones">
+                <Link className="boton boton-primario" to={`/panel/compra/${pedido.id}`}>
+                  Ver mi pedido
+                </Link>
+              </div>
             </section>
           ) : (
-            <ElegirPack evento={evento} modo="activar" estadoRetorno={retornoPago} />
+            <section className="tarjeta activar">
+              <p className="etiqueta">Último paso</p>
+              <h2>Elegí tu pack y activá la galería</h2>
+              <p className="ayuda">
+                Podés pagar con Mercado Pago o por transferencia, y sumar la invitación digital si querés. El QR empieza a funcionar
+                apenas se confirma el pago.
+              </p>
+              <div className="acciones">
+                <Link
+                  className="boton boton-primario"
+                  to={`/contratar?${new URLSearchParams({
+                    evento: evento.id,
+                    titulo: evento.titulo,
+                    tipo: evento.tipo,
+                    ...(evento.fecha ? { fecha: evento.fecha } : {}),
+                    pack: 'basico',
+                  }).toString()}`}
+                >
+                  Elegir pack y pagar
+                </Link>
+              </div>
+            </section>
           )
         ) : (
           <>
-        <ProximosPasos evento={evento} recienPagado={recienPagado} />
+        <ProximosPasos evento={evento} recienPagado={recienPagado} pedido={pedido} />
         <section className="tarjeta bloque-qr">
           <div className="qr-marco">{qr ? <img src={qr} alt="Código QR para los invitados" className="qr" /> : <div className="qr" />}</div>
           <div className="bloque-qr-texto">
@@ -276,8 +289,19 @@ export default function PanelEvento() {
             </div>
           </section>
         </div>
+        ) : pedido && ['pendiente_pago', 'transferencia_pendiente'].includes(pedido.estado) ? (
+          <section className="tarjeta activar mejorar">
+            <p className="etiqueta">Mejora en curso</p>
+            <h2>{pedido.estado === 'transferencia_pendiente' ? 'Esperando la confirmación de tu transferencia' : 'Falta completar el pago de la mejora'}</h2>
+            <p className="ayuda">El pack nuevo se aplica solo cuando se confirma el pago.</p>
+            <div className="acciones">
+              <Link className="boton boton-primario" to={`/panel/compra/${pedido.id}`}>
+                Ver mi pedido
+              </Link>
+            </div>
+          </section>
         ) : (
-          <ElegirPack evento={evento} modo="mejorar" estadoRetorno={retornoPago} />
+          <ElegirPack evento={evento} />
         )}
 
           </>

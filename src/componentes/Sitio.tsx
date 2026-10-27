@@ -2,10 +2,14 @@ import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { NEGOCIO, linkWhatsappNegocio } from '../lib/negocio';
 import { Marca } from './Marca';
+import { esAnonima, useSesion } from '../lib/sesion';
 
 /** Barra superior de las páginas públicas. */
 export function CabeceraSitio() {
   const [abierto, setAbierto] = useState(false);
+  const sesion = useSesion();
+  // Los invitados entran con sesión anónima: para la barra cuentan como sin sesión.
+  const conCuenta = Boolean(sesion) && !esAnonima(sesion);
   const enlaces = [
     { a: '/#como-funciona', texto: 'Cómo funciona' },
     { a: '/demo', texto: 'Ver demo' },
@@ -29,6 +33,16 @@ export function CabeceraSitio() {
               </NavLink>
             ),
           )}
+          {sesion !== undefined &&
+            (conCuenta ? (
+              <Link className="boton nav-cta" to="/panel" onClick={() => setAbierto(false)}>
+                Mis eventos
+              </Link>
+            ) : (
+              <Link to="/entrar?modo=entrar" onClick={() => setAbierto(false)}>
+                Entrar
+              </Link>
+            ))}
           <Link className="boton boton-primario nav-cta" to="/contratar" onClick={() => setAbierto(false)}>
             Crear mi galería
           </Link>
@@ -165,7 +179,7 @@ export function PieSitio({ compacto = false, oscuro = false }: { compacto?: bool
             © {anio} {NEGOCIO.nombre} · {NEGOCIO.titular} · CUIT {NEGOCIO.cuit}
           </p>
           <p className="pie-pagos">
-            <span aria-hidden="true">🔒</span> Pagos procesados de forma segura por Mercado Pago
+            <span aria-hidden="true">🔒</span> Pagás con Mercado Pago o por transferencia bancaria
           </p>
         </div>
       </div>

@@ -4,7 +4,6 @@ import Inicio from './paginas/Inicio';
 import Entrar from './paginas/Entrar';
 import Restablecer from './paginas/Restablecer';
 import MisEventos from './paginas/MisEventos';
-import NuevoEvento from './paginas/NuevoEvento';
 import PanelEvento from './paginas/PanelEvento';
 import TriviaPanel from './paginas/TriviaPanel';
 import Tarjetas from './paginas/Tarjetas';
@@ -15,7 +14,7 @@ import { Arrepentimiento, Devoluciones, Privacidad, Terminos } from './paginas/L
 import RutaAnfitrion from './componentes/RutaAnfitrion';
 import Contratar from './paginas/Contratar';
 import CompraEvento from './paginas/CompraEvento';
-import AdministrarTransferencias from './paginas/AdministrarTransferencias';
+import Administracion from './paginas/Administracion';
 import AdministrarInvitaciones from './paginas/AdministrarInvitaciones';
 
 export default function App() {
@@ -47,10 +46,12 @@ export default function App() {
       <Route path="/contratar" element={<Contratar />} />
       <Route element={<RutaAnfitrion />}>
         <Route path="/panel" element={<MisEventos />} />
-        <Route path="/panel/administracion/transferencias" element={<AdministrarTransferencias />} />
+        <Route path="/panel/administracion" element={<Administracion />} />
+        <Route path="/panel/administracion/transferencias" element={<Navigate to="/panel/administracion" replace />} />
         <Route path="/panel/administracion/invitaciones" element={<AdministrarInvitaciones />} />
         <Route path="/panel/compra/:id" element={<CompraEvento />} />
-        <Route path="/panel/nuevo" element={<NuevoEvento />} />
+        {/* Las galerías nuevas se crean desde el checkout; se mantiene la ruta vieja por enlaces guardados. */}
+        <Route path="/panel/nuevo" element={<Navigate to="/contratar" replace />} />
         <Route path="/panel/:id" element={<PanelEvento />} />
         <Route path="/panel/:id/trivia" element={<TriviaPanel />} />
         <Route path="/panel/:id/tarjetas" element={<Tarjetas />} />

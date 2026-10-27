@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
        <strong>Teléfono:</strong> ${escapar(telefono ?? '-')}<br>
        <strong>Evento o pago:</strong> ${escapar(referencia ?? '-')}<br>
        <strong>Motivo:</strong> ${escapar(motivo ?? '-')}</p>
-       <p>Hay que responderle y gestionar la devolución desde Mercado Pago.</p>`,
+       <p>Hay que responderle y gestionar la devolución por el mismo medio de pago (Mercado Pago o transferencia).</p>`,
     ),
   );
 

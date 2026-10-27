@@ -8,6 +8,12 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Reintentos de npm ante cortes momentáneos de red con el registro.
+env:
+  npm_config_fetch_retries: 5
+  npm_config_fetch_retry_mintimeout: 20000
+  npm_config_fetch_retry_maxtimeout: 120000
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -15,7 +21,6 @@ jobs:
       VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
       VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
       VITE_R2_PUBLIC_URL: ${{ secrets.VITE_R2_PUBLIC_URL }}
-      VITE_WHATSAPP_NUMERO: ${{ secrets.WHATSAPP_NUMERO }}
       FTP_SERVER: ${{ secrets.FTP_SERVER }}
     steps:
       - uses: actions/checkout@v4

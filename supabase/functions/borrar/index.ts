@@ -78,6 +78,18 @@ Deno.serve(async (req) => {
       return respuesta(403, { error: 'Solo quien creó el evento puede borrarlo' });
     }
 
+    // Una galería con un pedido sin resolver no se borra: el pago podría acreditarse después.
+    const { data: pedidoAbierto } = await admin
+      .from('compras')
+      .select('id')
+      .eq('event_id', eventId)
+      .in('estado', ['pendiente_pago', 'transferencia_pendiente'])
+      .limit(1)
+      .maybeSingle();
+    if (pedidoAbierto) {
+      return respuesta(409, { error: 'Esta galería tiene un pedido pendiente de pago. Escribinos para cancelarlo antes de borrarla.' });
+    }
+
     // Primero los archivos: si se corta a mitad de camino, el evento sigue existiendo
     // y se puede volver a intentar.
     const inicio = Date.now();

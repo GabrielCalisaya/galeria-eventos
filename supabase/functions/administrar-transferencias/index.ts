@@ -1,8 +1,97 @@
-import { clienteAdmin, cors, respuesta, usuarioDelPedido } from '../_shared/comun.ts';
-import { sincronizarInvitacion } from '../_shared/invitaciones-wordpress.ts';
-import { enviarCorreo, escapar, plantilla } from '../_shared/correo.ts';
+// Administración de pedidos (solo emails de TRANSFER_ADMIN_EMAILS; se valida en cada llamada).
+// GET ?vista=permiso        → confirma que la sesión es de un administrador.
+// GET ?vista=transferencias → compras con transferencia pendiente de acreditar (por defecto).
+// GET ?vista=pedidos        → pedidos con invitación, con la ficha del cliente.
+// POST { compra_id }                                   → confirma la acreditación de una transferencia.
+// POST { compra_id, accion: 'estado', estado, url_invitacion } → invitación en preparación o entregada.
 
-const SITE = (Deno.env.get('ALLOWED_ORIGIN') ?? '').replace(/\/$/, '');
+import { clienteAdmin, cors, respuesta, usuarioDelPedido } from '../_shared/comun.ts';
+import { enviarCorreo, escapar, plantilla } from '../_shared/correo.ts';
+import { sincronizarInvitacion } from '../_shared/invitaciones-wordpress.ts';
+
+const SITIO = (Deno.env.get('ALLOWED_ORIGIN') ?? '').replace(/\/$/, '');
+const pesos = (n: number) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n);
+
+type Admin = ReturnType<typeof clienteAdmin>;
+
+async function avisarTransferenciaConfirmada(
+  admin: Admin,
+  compra: { id: string; event_id: string | null; gallery_pack: string | null; invitation_tier: string | null; datos_completos: boolean; total: number },
+  invitacionPreparada: boolean,
+): Promise<boolean> {
+  const { data } = await admin.from('compras').select('user_id,titulo_evento').eq('id', compra.id).maybeSingle();
+  if (!data) return false;
+  const { data: usuario } = await admin.auth.admin.getUserById(data.user_id);
+  const email = usuario?.user?.email ?? '';
+  const nombre = (usuario?.user?.user_metadata?.nombre as string | undefined) ?? '';
+  const pasos = [
+    compra.event_id && compra.gallery_pack ? 'Tu galería ya está activa con el pack que elegiste.' : '',
+    compra.invitation_tier ? compra.datos_completos
+      ? invitacionPreparada ? 'Recibimos la ficha y ya estamos preparando el borrador de tu invitación.' : 'Recibimos la ficha; necesitamos revisar la preparación antes de continuar.'
+      : 'Completá la ficha de tu evento para que preparemos la invitación.' : '',
+  ].filter(Boolean).map((p) => `<li style="margin-bottom:6px">${escapar(p)}</li>`).join('');
+  return enviarCorreo(
+    email,
+    `Transferencia confirmada · ${data.titulo_evento}`,
+    plantilla(
+      '¡Recibimos tu transferencia!',
+      `<p>${nombre ? `Hola ${escapar(nombre)}, ` : ''}confirmamos la acreditación de ${pesos(Number(compra.total))} para <strong>${escapar(
+        data.titulo_evento,
+      )}</strong>.</p>${pasos ? `<ol style="padding-left:20px;margin:0">${pasos}</ol>` : ''}`,
+      { texto: 'Ver mi pedido', url: `${SITIO}/panel/compra/${compra.id}` },
+      undefined,
+      'Invitaciones Digitales · by NewTech',
+    ),
+  );
+}
+
+async function cambiarEstadoInvitacion(admin: Admin, compraId: string, estado?: string, url?: string): Promise<Response> {
+  if (estado !== 'preparando' && estado !== 'entregada') return respuesta(400, { error: 'Estado no válido.' });
+  let urlFinal: string | null = null;
+  if (estado === 'entregada') {
+    try {
+      const u = new URL(String(url ?? '').trim());
+      if (u.protocol !== 'https:') throw new Error('protocolo');
+      urlFinal = u.href;
+    } catch {
+      return respuesta(400, { error: 'Para entregar la invitación pegá su URL final (https://…).' });
+    }
+  }
+
+  const { data: compra } = await admin.from('compras')
+    .select('id,user_id,titulo_evento,invitation_tier,estado,url_invitacion')
+    .eq('id', compraId).maybeSingle();
+  if (!compra || !compra.invitation_tier) return respuesta(404, { error: 'No encontramos ese pedido de invitación.' });
+  const permitidos = estado === 'preparando' ? ['pagada'] : ['pagada', 'preparando', 'entregada'];
+  if (!permitidos.includes(compra.estado)) {
+    return respuesta(409, { error: compra.estado === 'transferencia_pendiente' ? 'Primero confirmá la transferencia.' : 'El pedido no está en un estado que permita este cambio.' });
+  }
+
+  const { error } = await admin.from('compras')
+    .update({ estado, ...(urlFinal ? { url_invitacion: urlFinal } : {}), updated_at: new Date().toISOString() })
+    .eq('id', compra.id).eq('estado', compra.estado);
+  if (error) return respuesta(500, { error: 'No se pudo actualizar el pedido.' });
+
+  let correoEnviado = false;
+  if (urlFinal && urlFinal !== compra.url_invitacion) {
+    const { data: usuario } = await admin.auth.admin.getUserById(compra.user_id);
+    const nombre = (usuario?.user?.user_metadata?.nombre as string | undefined) ?? '';
+    correoEnviado = await enviarCorreo(
+      usuario?.user?.email ?? '',
+      `Tu invitación está lista · ${compra.titulo_evento}`,
+      plantilla(
+        '¡Tu invitación está lista!',
+        `<p>${nombre ? `Hola ${escapar(nombre)}, ` : ''}ya publicamos la invitación de <strong>${escapar(compra.titulo_evento)}</strong>.
+         Compartí este enlace con tus invitados:</p><p><a href="${escapar(urlFinal)}">${escapar(urlFinal)}</a></p>
+         <p>Si querés corregir algún dato, respondé este correo o escribinos por WhatsApp.</p>`,
+        { texto: 'Abrir mi invitación', url: urlFinal },
+        { texto: 'Ver mi pedido', url: `${SITIO}/panel/compra/${compra.id}` },
+        'Invitaciones Digitales · by NewTech',
+      ),
+    );
+  }
+  return respuesta(200, { actualizado: true, estado, url_invitacion: urlFinal ?? compra.url_invitacion, correo_enviado: correoEnviado });
+}
 
 const administradores = new Set(
   (Deno.env.get('TRANSFER_ADMIN_EMAILS') ?? '')
@@ -26,6 +115,28 @@ Deno.serve(async (req) => {
     return respuesta(403, { error: 'Acceso reservado a administradores.' });
   }
 
+  const vista = new URL(req.url).searchParams.get('vista') ?? 'transferencias';
+
+  // El panel consulta esto para mostrar el acceso a la administración solo a quien corresponde.
+  if (req.method === 'GET' && vista === 'permiso') return respuesta(200, { admin: true });
+
+  // Pedidos con invitación: la ficha que cargó el cliente y el estado de preparación.
+  if (req.method === 'GET' && vista === 'pedidos') {
+    const { data: pedidos, error } = await admin
+      .from('compras')
+      .select('id,user_id,titulo_evento,tipo_evento,fecha_evento,invitation_tier,productos,total,moneda,estado,datos_invitacion,datos_completos,url_invitacion,created_at,updated_at')
+      .not('invitation_tier', 'is', null)
+      .in('estado', ['transferencia_pendiente', 'pagada', 'preparando', 'entregada'])
+      .order('created_at', { ascending: false })
+      .limit(100);
+    if (error) return respuesta(500, { error: 'No se pudieron cargar los pedidos.' });
+    const conEmail = await Promise.all((pedidos ?? []).map(async (p) => {
+      const { data: u } = await admin.auth.admin.getUserById(p.user_id);
+      return { ...p, email: u?.user?.email ?? '' };
+    }));
+    return respuesta(200, { pedidos: conEmail });
+  }
+
   if (req.method === 'GET') {
     const { data: compras, error } = await admin
       .from('compras')
@@ -43,7 +154,7 @@ Deno.serve(async (req) => {
     return respuesta(200, { compras: pendientes.filter(Boolean) });
   }
 
-  let body: { compra_id?: string };
+  let body: { compra_id?: string; accion?: string; estado?: string; url_invitacion?: string };
   try {
     body = await req.json();
   } catch {
@@ -53,9 +164,12 @@ Deno.serve(async (req) => {
     return respuesta(400, { error: 'La referencia de compra no es válida.' });
   }
 
+  // Avance de la invitación: en preparación, o entregada con su URL final (se le avisa al cliente).
+  if (body.accion === 'estado') return await cambiarEstadoInvitacion(admin, body.compra_id, body.estado, body.url_invitacion);
+
   const { data: compra, error: errorCompra } = await admin
     .from('compras')
-    .select('id,event_id,gallery_pack,invitation_tier,datos_completos,estado,total,moneda')
+    .select('id,event_id,gallery_pack,invitation_tier,datos_completos,fecha_evento,estado,total,moneda')
     .eq('id', body.compra_id)
     .maybeSingle();
   if (errorCompra || !compra) return respuesta(404, { error: 'No encontramos esa compra.' });
@@ -113,9 +227,10 @@ Deno.serve(async (req) => {
     const { error: errorActivar } = await admin.from('events').update({
       estado: 'activo',
       pack: compra.gallery_pack,
+      ...(compra.fecha_evento ? { fecha: compra.fecha_evento } : {}),
       limite_fotos: precio.limite_fotos,
       vence_album: vence.toISOString().slice(0, 10),
-    }).eq('id', compra.event_id).eq('estado', 'borrador');
+    }).eq('id', compra.event_id).in('estado', ['borrador', 'activo']); // activo: mejora de pack
     if (errorActivar) {
       await admin.from('compras').update({ estado: 'transferencia_pendiente', updated_at: new Date().toISOString() }).eq('id', compra.id).eq('estado', 'pagada');
       await admin.from('compra_pagos').update({ estado: 'pendiente', detalle: 'confirmación revertida por error al activar la galería', updated_at: new Date().toISOString() }).eq('id', pago.id).eq('estado', 'aprobado');
@@ -123,35 +238,21 @@ Deno.serve(async (req) => {
     }
   }
 
-  if (compra.invitation_tier && compra.datos_completos) await sincronizarInvitacion(admin, compra.id);
+  const sincronizacion = compra.invitation_tier && compra.datos_completos
+    ? await sincronizarInvitacion(admin, compra.id)
+    : null;
 
-  const { data: avisoTomado } = await admin.from('compras').update({ email_notificado_at: ahora })
-    .eq('id', compra.id).is('email_notificado_at', null).select('id').maybeSingle();
+  // Aviso al cliente, una sola vez por compra. Si el correo falla, la marca se libera para poder reenviarlo.
   let correoEnviado = false;
-  if (avisoTomado) {
-    correoEnviado = await enviarAvisoTransferencia(admin, compra.id);
+  const { data: marcada } = await admin.from('compras').update({ email_notificado_at: ahora })
+    .eq('id', compra.id).is('email_notificado_at', null).select('id').maybeSingle();
+  if (marcada) {
+    correoEnviado = await avisarTransferenciaConfirmada(admin, compra, Boolean(sincronizacion?.ok));
     if (!correoEnviado) {
-      await admin.from('compras').update({ email_notificado_at: null }).eq('id', compra.id).eq('email_notificado_at', ahora);
-      console.error('No se pudo enviar el correo de compra confirmada', compra.id);
+      await admin.from('compras').update({ email_notificado_at: null }).eq('id', compra.id);
+      console.error('No se pudo enviar el aviso de transferencia confirmada', compra.id);
     }
   }
 
-  return respuesta(200, { confirmado: true, compra_id: compra.id, event_id: compra.event_id, correo_enviado: correoEnviado });
+  return respuesta(200, { confirmado: true, compra_id: compra.id, event_id: compra.event_id, correo_enviado: correoEnviado, aviso_preparacion: sincronizacion && !sincronizacion.ok ? sincronizacion.error : undefined });
 });
-
-async function enviarAvisoTransferencia(admin: ReturnType<typeof clienteAdmin>, compraId: string): Promise<boolean> {
-  const { data: compra } = await admin.from('compras').select('id,user_id,titulo_evento,productos,total,moneda,invitation_tier,datos_completos').eq('id', compraId).maybeSingle();
-  if (!compra) return false;
-  const { data: usuario } = await admin.auth.admin.getUserById(compra.user_id);
-  const email = usuario?.user?.email ?? '';
-  if (!email || !SITE) return false;
-  const nombre = (usuario?.user?.user_metadata?.nombre as string | undefined) ?? '';
-  const resumen = ((compra.productos as Array<{ nombre: string }> | null) ?? []).map((item) => `<li>${escapar(item.nombre)}</li>`).join('');
-  const siguiente = compra.invitation_tier
-    ? compra.datos_completos ? 'Ya recibimos la ficha de tu invitación. Estamos preparando el borrador para revisar los detalles antes de publicarlo.' : 'Completá la ficha del evento desde el detalle de tu pedido para que podamos preparar la invitación.'
-    : 'Tu galería está activa. Podés administrarla desde el panel de eventos.';
-  const cuerpo = `<p>${nombre ? `Hola ${escapar(nombre)}, ` : ''}confirmamos la acreditación de tu transferencia para <strong>${escapar(compra.titulo_evento)}</strong>.</p><p><strong>Incluye:</strong></p><ul>${resumen}</ul><p><strong>Total:</strong> ${new Intl.NumberFormat('es-AR', { style: 'currency', currency: compra.moneda, maximumFractionDigits: 0 }).format(Number(compra.total))}<br><strong>Referencia:</strong> ${escapar(compra.id)}</p><p>${siguiente}</p>`;
-  const url = `${SITE}/panel/compra/${compra.id}`;
-  const sent = await enviarCorreo(email, `Pago confirmado · ${compra.titulo_evento}`, plantilla('¡Pago confirmado!', cuerpo, { texto: compra.invitation_tier ? 'Ver mi pedido' : 'Ir a mi panel', url }, undefined, 'Invitaciones Digitales · by NewTech'));
-  return sent;
-}

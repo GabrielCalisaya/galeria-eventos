@@ -3,13 +3,17 @@ import { linkWhatsapp, MUESTRAS_INVITACIONES } from '../lib/contacto';
 import { incluyeExtras } from '../lib/pagos';
 import type { Evento } from '../lib/tipos';
 
+type Pedido = { id: string; invitation_tier: string | null; datos_completos: boolean; estado: string };
+
 /**
- * Después de pagar: qué hacer ahora. En el pack Completo queda siempre visible
- * el contacto para armar la invitación digital.
+ * Después de pagar: qué hacer ahora. Si la galería viene de un pedido con invitación, lleva a su ficha;
+ * si es un pack Completo del flujo anterior (sin pedido), la invitación se coordina por WhatsApp.
  */
-export default function ProximosPasos({ evento, recienPagado }: { evento: Evento; recienPagado: boolean }) {
-  const esCompleto = evento.pack === 'completo';
-  if (!recienPagado && !esCompleto) return null;
+export default function ProximosPasos({ evento, recienPagado, pedido }: { evento: Evento; recienPagado: boolean; pedido?: Pedido | null }) {
+  const conFicha = Boolean(pedido?.invitation_tier);
+  const fichaPendiente = conFicha && !pedido?.datos_completos && ['pagada', 'transferencia_pendiente'].includes(pedido?.estado ?? '');
+  const esCompleto = evento.pack === 'completo' && !conFicha;
+  if (!recienPagado && !esCompleto && !fichaPendiente) return null;
 
   const whatsapp = linkWhatsapp(
     `Hola, tengo el pack Completo de Galería en vivo para "${evento.titulo}". Te paso los datos para la invitación digital.`,
@@ -43,8 +47,28 @@ export default function ProximosPasos({ evento, recienPagado }: { evento: Evento
                 <strong>Escribinos por WhatsApp</strong> para armar tu invitación digital.
               </li>
             )}
+            {fichaPendiente && pedido && (
+              <li>
+                <strong>Completá la ficha de tu invitación</strong>.{' '}
+                <Link to={`/panel/compra/${pedido.id}`}>Completar la ficha</Link>
+              </li>
+            )}
           </ol>
         </>
+      )}
+
+      {fichaPendiente && pedido && !recienPagado && (
+        <div className="proximos-invitacion">
+          <div>
+            <p className="etiqueta">Invitación digital</p>
+            <p className="proximos-texto">Falta que completes la ficha con los datos de tu invitación para que podamos prepararla.</p>
+          </div>
+          <div className="acciones">
+            <Link className="boton boton-primario" to={`/panel/compra/${pedido.id}`}>
+              Completar la ficha
+            </Link>
+          </div>
+        </div>
       )}
 
       {esCompleto && (

@@ -40,16 +40,18 @@ export function Terminos() {
       <p>
         {NEGOCIO.producto} es una galería web para eventos: los invitados suben fotos desde su celular escaneando un código
         QR, y el anfitrión las ve, modera y descarga. Según el pack contratado incluye pantalla del salón, trivia, tarjetas de
-        mesa e invitación digital.
+        mesa e invitación digital. La invitación digital también se puede contratar sola, en nivel Estándar, Premium o
+        Deluxe.
       </p>
 
       <h2>3. Contratación y pago</h2>
       <ul>
-        <li>Se paga una sola vez por evento, a través de Mercado Pago. No hay suscripciones ni cobros automáticos.</li>
+        <li>Se paga una sola vez por evento, con Mercado Pago o por transferencia bancaria. No hay suscripciones ni cobros automáticos.</li>
         <li>Los precios están expresados en pesos argentinos e incluyen todo lo detallado en cada pack.</li>
-        <li>El evento se activa cuando Mercado Pago confirma el pago.</li>
+        <li>La galería se activa cuando Mercado Pago confirma el pago o cuando confirmamos la acreditación de la transferencia.</li>
         <li>
-          La invitación digital del pack Completo se coordina por WhatsApp después del pago, con los datos que nos envíes.
+          La invitación digital se prepara con los datos que completes en la ficha de tu pedido después de comprar. El
+          material extra (fotos, logo, referencias) se envía por WhatsApp.
         </li>
       </ul>
 
@@ -110,6 +112,10 @@ export function Privacidad() {
           Mercado Pago: nosotros no vemos ni guardamos los datos de tu tarjeta.
         </li>
         <li>
+          <strong>De la invitación digital:</strong> los datos que cargás en la ficha del pedido (nombres, lugar, horarios,
+          contacto e información de regalos) se usan solo para preparar y publicar tu invitación.
+        </li>
+        <li>
           <strong>De los invitados:</strong> el nombre que escriben al entrar y las fotos que suben. No pedimos email ni
           teléfono a los invitados.
         </li>
@@ -157,9 +163,9 @@ export function Devoluciones() {
 
       <h2>Cómo se devuelve</h2>
       <ul>
-        <li>Devolvemos el total por el mismo medio de pago, a través de Mercado Pago.</li>
+        <li>Devolvemos el total por el mismo medio de pago: por Mercado Pago o por transferencia a la cuenta que nos indiques.</li>
         <li>Al confirmar la devolución, la galería del evento se desactiva y su QR deja de funcionar.</li>
-        <li>Los plazos de acreditación dependen de Mercado Pago y de tu tarjeta o banco.</li>
+        <li>Los plazos de acreditación dependen de Mercado Pago, de tu tarjeta o de tu banco.</li>
       </ul>
 
       <h2>Después de los 10 días</h2>

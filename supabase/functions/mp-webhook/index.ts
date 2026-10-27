@@ -122,6 +122,7 @@ Deno.serve(async (req) => {
         const { error: errorActivar } = await admin.from('events').update({
           estado: 'activo',
           pack: compra.gallery_pack,
+          ...(compra.fecha_evento ? { fecha: compra.fecha_evento } : {}),
           limite_fotos: precio?.limite_fotos ?? 1500,
           vence_album: vence.toISOString().slice(0, 10),
         }).eq('id', compra.event_id).in('estado', ['borrador', 'activo']);
@@ -141,6 +142,7 @@ Deno.serve(async (req) => {
     return ok();
   }
 
+  // Pagos del flujo anterior (tabla pagos, sin pedido): se siguen procesando por si queda alguno en curso.
   const { data: pago } = await admin.from('pagos').select('id, event_id, pack, monto, moneda, estado').eq('id', pagoId).maybeSingle();
   if (!pago) return ok();
 
@@ -233,7 +235,7 @@ async function avisarCompra(
       <strong>Cliente:</strong> ${escapar(nombre || 'Anfitrión')} · ${escapar(email)}<br>
       <strong>Referencia:</strong> ${escapar(compra.id)}<br><strong>Importe:</strong> ${pesos(Number(pagoMp.transaction_amount))}<br>
       <strong>Productos:</strong> ${lista}</p>`,
-      { texto: 'Ver la compra', url: ordenUrl },
+      { texto: 'Ver pedidos', url: `${SITIO}/panel/administracion` },
       undefined,
       'Invitaciones Digitales · by NewTech',
     ));

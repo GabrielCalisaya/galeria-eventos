@@ -9,6 +9,15 @@ alter table public.compras
   add column if not exists invitacion_sync_error text,
   add column if not exists invitacion_sync_at timestamptz;
 
+update public.compras
+set tipo_invitacion = case
+  when tipo_evento in ('casamiento', 'aniversario') then 'wedding'
+  when tipo_evento = 'quince' then 'xv'
+  when tipo_evento = 'cumpleanos' then 'birthday'
+  else tipo_invitacion
+end
+where invitation_tier is not null and tipo_invitacion is null;
+
 create index if not exists compras_invitacion_sync_idx
   on public.compras (invitacion_sync_estado, updated_at desc)
   where invitation_tier is not null;

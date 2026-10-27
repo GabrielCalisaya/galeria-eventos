@@ -1,7 +1,0 @@
-{
-  "nodeModulesDir": "auto",
-  "imports": {
-    "@supabase/supabase-js": "npm:@supabase/supabase-js@2",
-    "aws4fetch": "npm:aws4fetch@1"
-  }
-}

@@ -10,9 +10,6 @@ verify_jwt = false
 [functions.borrar]
 verify_jwt = false
 
-[functions.crear-pago]
-verify_jwt = false
-
 [functions.cotizar-compra]
 verify_jwt = false
 

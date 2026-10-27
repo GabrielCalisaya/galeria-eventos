@@ -531,10 +531,6 @@ a {
   padding: 36px clamp(16px, 4vw, 32px) 0;
 }
 
-.panel-columna.angosta {
-  max-width: 520px;
-}
-
 .panel h1 {
   margin: 0 0 6px;
   font-family: var(--serif);
@@ -2634,6 +2630,9 @@ a {
   .nav-cta {
     margin-top: 14px;
     min-height: 50px;
+  }
+  .nav-cta + .nav-cta {
+    margin-top: 8px;
   }
 }
 
@@ -5120,16 +5119,42 @@ button.idea:hover {
   color: var(--suave);
 }
 
-/* Administración de transferencias */
+/* Administración de pedidos */
 .administracion-transferencias .volver { display: inline-block; margin-bottom: 18px; }
-.admin-transferencias-lista { display: grid; gap: 14px; margin: 24px 0; padding: 0; list-style: none; }
-.admin-transferencia { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 22px; }
-.admin-transferencia h2 { margin: 0 0 8px; font: 600 1.5rem/1.1 var(--serif); }
-.admin-transferencia p { margin: 5px 0; overflow-wrap: anywhere; }
-.admin-transferencia-datos { min-width: 0; }
+.administracion-transferencias > h2 { margin: 40px 0 4px; font: 600 1.8rem/1.1 var(--serif); }
+.admin-transferencias-lista { display: grid; gap: 14px; margin: 20px 0; padding: 0; list-style: none; }
+.admin-transferencia,
+.admin-pedido { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 22px; }
+.admin-transferencia h3,
+.admin-pedido h3 { margin: 0 0 8px; font: 600 1.5rem/1.1 var(--serif); }
+.admin-transferencia p,
+.admin-pedido p { margin: 5px 0; overflow-wrap: anywhere; }
+.admin-transferencia-datos { min-width: 0; flex: 1 1 auto; }
 .admin-transferencia-accion { display: grid; justify-items: end; gap: 12px; flex: 0 0 auto; }
 .admin-transferencia-accion > strong { color: var(--ciruela); font-size: 1.35rem; }
+.admin-pedido-acciones { display: grid; gap: 10px; flex: 0 0 280px; }
+.admin-pedido-acciones .campo { margin: 0; }
+.admin-pedido details { margin-top: 10px; }
+.admin-pedido summary { cursor: pointer; font-weight: 700; color: var(--ciruela); }
+.admin-ficha { display: grid; gap: 6px; margin: 10px 0 0; }
+.admin-ficha div { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 10px; }
+.admin-ficha dt { color: var(--suave); }
+.admin-ficha dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 @media (max-width: 640px) {
-  .admin-transferencia { display: grid; }
+  .admin-transferencia,
+  .admin-pedido { display: grid; }
   .admin-transferencia-accion { justify-items: stretch; }
+  .admin-pedido-acciones { flex-basis: auto; }
+  .admin-ficha div { grid-template-columns: 1fr; gap: 0; }
 }
+
+/* Mis pedidos (panel del anfitrión) */
+.mis-pedidos { margin-top: 40px; }
+.mis-pedidos h2 { margin: 0 0 12px; font: 600 1.6rem/1.1 var(--serif); }
+.lista-pedidos { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.pedido-fila { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 18px; border: 1px solid var(--linea); border-radius: 16px; background: var(--crema-clara); color: var(--tinta); text-decoration: none; }
+.pedido-fila:hover { border-color: var(--rosa); }
+.pedido-fila span:first-child { display: grid; gap: 2px; min-width: 0; }
+.pedido-fila strong { overflow-wrap: anywhere; }
+.pedido-fila small { color: var(--suave); }
+.pedido-total { flex: 0 0 auto; font-weight: 700; color: var(--ciruela); }

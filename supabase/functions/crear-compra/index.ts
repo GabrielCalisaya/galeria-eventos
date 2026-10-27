@@ -1,5 +1,5 @@
 import { clienteAdmin, cors, respuesta, usuarioDelPedido } from '../_shared/comun.ts';
-import { cotizarCompra } from '../_shared/catalogo-compra.ts';
+import { cotizarCompra, type ProductoCotizado } from '../_shared/catalogo-compra.ts';
 import { ADMIN_EMAIL, enviarCorreo, escapar, linkWhatsapp, plantilla } from '../_shared/correo.ts';
 
 const MP_ACCESS_TOKEN = Deno.env.get('MP_ACCESS_TOKEN') ?? '';
@@ -8,6 +8,8 @@ const SITE = (Deno.env.get('ALLOWED_ORIGIN') ?? '').replace(/\/$/, '');
 const TRANSFER_ALIAS = (Deno.env.get('TRANSFER_ALIAS') ?? '').trim();
 
 const tiposEvento = new Set(['casamiento', 'quince', 'cumpleanos', 'aniversario', 'corporativo', 'otro']);
+const tipoInvitacionDeEvento = (tipo: string): 'wedding' | 'birthday' | 'xv' | null =>
+  tipo === 'quince' ? 'xv' : tipo === 'cumpleanos' ? 'birthday' : ['casamiento', 'aniversario'].includes(tipo) ? 'wedding' : null;
 const fechaValida = (value: unknown): value is string => {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const parsed = new Date(`${value}T00:00:00.000Z`);
@@ -23,6 +25,10 @@ Deno.serve(async (req) => {
     event_title?: string;
     event_type?: string;
     event_date?: string | null;
+    /** Borrador ya creado desde el panel (flujo anterior) que esta compra activa, en lugar de crear otro evento. */
+    event_id?: string | null;
+    /** true: mejora de pack de la galería activa `event_id` (se cobra la diferencia). */
+    mejora?: boolean;
     gallery_pack?: string | null;
     invitation_tier?: string | null;
     invitation_type?: 'wedding' | 'birthday' | 'xv' | null;
@@ -49,16 +55,76 @@ Deno.serve(async (req) => {
   if (typeof body.idempotency_key !== 'string' || body.idempotency_key.length < 16 || body.idempotency_key.length > 80) {
     return respuesta(400, { error: 'Actualizá la página e intentá de nuevo.' });
   }
-  const title = typeof body.event_title === 'string' ? body.event_title.trim() : '';
-  if (!title || title.length > 120) return respuesta(400, { error: 'Ingresá el nombre del evento (hasta 120 caracteres).' });
-  if (!tiposEvento.has(body.event_type ?? '')) return respuesta(400, { error: 'Elegí un tipo de evento válido.' });
-  if (body.event_date && !fechaValida(body.event_date)) return respuesta(400, { error: 'Ingresá una fecha válida.' });
-  const tipoPlantilla = body.invitation_tier ? body.invitation_type : null;
-  if (body.invitation_tier && !['wedding', 'birthday', 'xv'].includes(tipoPlantilla ?? '')) return respuesta(400, { error: 'Elegí si la invitación será para boda, cumpleaños o fiesta de 15.' });
-  if (body.invitation_tier && !body.event_date) return respuesta(400, { error: 'Elegí la fecha del evento para preparar la invitación.' });
+  let title = typeof body.event_title === 'string' ? body.event_title.trim() : '';
+  let eventType = body.event_type ?? '';
+  let eventDate: string | null = body.event_date || null;
+  let tipoPlantilla = body.invitation_type ?? null;
+  let quote: ProductoCotizado;
+  let eventoExistente: string | null = null;
 
-  const quote = await cotizarCompra(admin, body);
-  if (typeof quote === 'string') return respuesta(400, { error: quote });
+  if (body.mejora === true) {
+    // Mejora de pack de una galería activa: se paga la diferencia y se actualiza ese mismo evento.
+    if (typeof body.event_id !== 'string' || !/^[0-9a-f-]{36}$/i.test(body.event_id)) return respuesta(400, { error: 'La referencia del evento no es válida.' });
+    const { data: ev } = await admin.from('events').select('id,owner_id,estado,pack,titulo,tipo,fecha').eq('id', body.event_id).maybeSingle();
+    if (!ev || ev.owner_id !== sesion.userId) return respuesta(404, { error: 'No encontramos ese evento en tu cuenta.' });
+    if (ev.estado !== 'activo') return respuesta(409, { error: 'Solo se puede mejorar el pack de una galería activa.' });
+    const { data: abierto } = await admin.from('compras').select('id').eq('event_id', ev.id)
+      .in('estado', ['pendiente_pago', 'transferencia_pendiente']).neq('idempotency_key', body.idempotency_key).limit(1).maybeSingle();
+    if (abierto) return respuesta(409, { error: 'Esta galería ya tiene un pedido en curso. Abrilo desde el panel del evento.' });
+    const { data: precios } = await admin.from('precios_pack').select('pack,nombre,precio,orden,activo');
+    const actual = precios?.find((p) => p.pack === ev.pack);
+    const objetivo = precios?.find((p) => p.pack === body.gallery_pack && p.activo);
+    if (!actual || !objetivo) return respuesta(400, { error: 'Ese pack no está disponible.' });
+    if (objetivo.orden <= actual.orden) return respuesta(409, { error: 'La galería ya tiene ese pack o uno mejor.' });
+    const monto = Math.max(1, Number(objetivo.precio) - Number(actual.precio));
+    // El pack Completo trae la invitación Estándar: con la mejora, el cliente recibe la ficha para completarla.
+    const conInvitacion = objetivo.pack === 'completo';
+    quote = {
+      gallery_pack: objetivo.pack as ProductoCotizado['gallery_pack'],
+      invitation_tier: conInvitacion ? 'standard' : null,
+      subtotal: monto,
+      descuento: 0,
+      total: monto,
+      moneda: 'ARS',
+      productos: [
+        { tipo: 'mejora', codigo: objetivo.pack, nombre: `Mejora a pack ${objetivo.nombre}`, precio: monto },
+        ...(conInvitacion ? [{ tipo: 'invitacion', codigo: 'standard', nombre: 'Invitación Estándar incluida', precio: 0 }] : []),
+      ],
+    };
+    title = ev.titulo;
+    eventType = ev.tipo;
+    eventDate = body.event_date || ev.fecha;
+    if (eventDate && !fechaValida(eventDate)) return respuesta(400, { error: 'Ingresá una fecha válida.' });
+    if (conInvitacion) tipoPlantilla = tipoPlantilla ?? tipoInvitacionDeEvento(eventType);
+    if (conInvitacion && !tipoPlantilla) return respuesta(400, { error: 'Elegí el formato de invitación en el detalle del pedido antes de mejorar a Completo.' });
+    if (conInvitacion && !eventDate) return respuesta(400, { error: 'Ingresá la fecha del evento para incluir la invitación en el pack Completo.' });
+    eventoExistente = ev.id;
+  } else {
+    if (!title || title.length > 120) return respuesta(400, { error: 'Ingresá el nombre del evento (hasta 120 caracteres).' });
+    if (!tiposEvento.has(eventType)) return respuesta(400, { error: 'Elegí un tipo de evento válido.' });
+    if (eventDate && !fechaValida(eventDate)) return respuesta(400, { error: 'Ingresá una fecha válida.' });
+
+    const cotizacion = await cotizarCompra(admin, body);
+    if (typeof cotizacion === 'string') return respuesta(400, { error: cotizacion });
+    quote = cotizacion;
+    if (quote.invitation_tier) {
+      if (!['wedding', 'birthday', 'xv'].includes(tipoPlantilla ?? '')) return respuesta(400, { error: 'Elegí si la invitación será para boda, cumpleaños o fiesta de 15.' });
+      if (!eventDate) return respuesta(400, { error: 'Elegí la fecha del evento para preparar la invitación.' });
+    } else tipoPlantilla = null;
+
+    // Borrador existente: tiene que ser del usuario, seguir en borrador y no tener otro pedido abierto.
+    if (body.event_id) {
+      if (typeof body.event_id !== 'string' || !/^[0-9a-f-]{36}$/i.test(body.event_id)) return respuesta(400, { error: 'La referencia del evento no es válida.' });
+      if (!quote.gallery_pack) return respuesta(400, { error: 'Para activar esta galería elegí un paquete de galería.' });
+      const { data: ev } = await admin.from('events').select('id,owner_id,estado').eq('id', body.event_id).maybeSingle();
+      if (!ev || ev.owner_id !== sesion.userId) return respuesta(404, { error: 'No encontramos ese evento en tu cuenta.' });
+      if (ev.estado !== 'borrador') return respuesta(409, { error: 'Esa galería ya está activa.' });
+      const { data: abierto } = await admin.from('compras').select('id').eq('event_id', ev.id)
+        .in('estado', ['pendiente_pago', 'transferencia_pendiente']).neq('idempotency_key', body.idempotency_key).limit(1).maybeSingle();
+      if (abierto) return respuesta(409, { error: 'Este evento ya tiene un pedido en curso. Abrilo desde el panel del evento.' });
+      eventoExistente = ev.id;
+    }
+  }
 
   // Una repetición del mismo envío retoma la misma compra y evita crear dos eventos/pagos.
   const { data: existente } = await admin
@@ -70,7 +136,7 @@ Deno.serve(async (req) => {
   let compra: { id: string; event_id: string | null; total: number; moneda: string; estado: string } | null = null;
   let eventId: string | null = null;
   if (existente) {
-    if (existente.titulo_evento !== title || existente.tipo_evento !== body.event_type || existente.fecha_evento !== (body.event_date || null) ||
+    if (existente.titulo_evento !== title || existente.tipo_evento !== eventType || existente.fecha_evento !== eventDate ||
       existente.gallery_pack !== quote.gallery_pack || existente.invitation_tier !== quote.invitation_tier || existente.tipo_invitacion !== tipoPlantilla) {
       return respuesta(409, { error: 'Los datos del pedido cambiaron. Actualizá el checkout antes de volver a intentar.' });
     }
@@ -103,7 +169,9 @@ Deno.serve(async (req) => {
     if (errorReabrir) return respuesta(500, { error: 'No se pudo recuperar el pedido para reintentar el pago.' });
   }
 
-  if (!compra && quote.gallery_pack) {
+  if (!compra && eventoExistente) {
+    eventId = eventoExistente;
+  } else if (!compra && quote.gallery_pack) {
     let created: { id: string } | null = null;
     for (let attempt = 0; attempt < 3 && !created; attempt++) {
       const slug = crypto.randomUUID().replaceAll('-', '').slice(0, 20);
@@ -113,8 +181,8 @@ Deno.serve(async (req) => {
           owner_id: sesion.userId,
           slug,
           titulo: title,
-          fecha: body.event_date || null,
-          tipo: body.event_type,
+          fecha: eventDate,
+          tipo: eventType,
           estilo: {},
           pack: 'basico',
           estado: 'borrador',
@@ -137,8 +205,8 @@ Deno.serve(async (req) => {
       event_id: eventId,
       idempotency_key: body.idempotency_key,
       titulo_evento: title,
-      tipo_evento: body.event_type,
-      fecha_evento: body.event_date || null,
+      tipo_evento: eventType,
+      fecha_evento: eventDate,
       gallery_pack: quote.gallery_pack,
       invitation_tier: quote.invitation_tier,
       tipo_invitacion: tipoPlantilla,
@@ -152,7 +220,7 @@ Deno.serve(async (req) => {
       .select('id,event_id,total,moneda,estado')
       .single();
     if (errorCompra || !nuevaCompra) {
-      if (eventId) await admin.from('events').delete().eq('id', eventId).eq('owner_id', sesion.userId);
+      if (eventId && eventId !== eventoExistente) await admin.from('events').delete().eq('id', eventId).eq('owner_id', sesion.userId);
       return respuesta(500, { error: 'No se pudo guardar la compra. Intentá de nuevo.' });
     }
     compra = nuevaCompra;
@@ -210,7 +278,7 @@ Deno.serve(async (req) => {
       <p>El pedido se activa cuando confirmemos la transferencia. Después podés revisar o completar los datos desde el detalle de compra.</p>`;
     if (email) await enviarCorreo(email, `Transferencia pendiente · ${title}`, plantilla('Tu pedido quedó pendiente de transferencia', cuerpo, { texto: 'Avisar por WhatsApp', url: contacto }, undefined, 'Invitaciones Digitales · by NewTech'));
     if (ADMIN_EMAIL) await enviarCorreo(ADMIN_EMAIL, `Transferencia pendiente · ${title}`, plantilla('Nueva compra pendiente de transferencia',
-      `<p><strong>Evento:</strong> ${escapar(title)}${evento?.fecha ? ` · ${escapar(evento.fecha)}` : ''}<br><strong>Cliente:</strong> ${escapar(email)}<br><strong>Total:</strong> ${new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(Number(compra.total))}<br><strong>Referencia:</strong> ${escapar(compra.id)}<br><strong>Productos:</strong> ${listaProductos}</p>`, undefined, undefined, 'Invitaciones Digitales · by NewTech'));
+      `<p><strong>Evento:</strong> ${escapar(title)}${evento?.fecha ? ` · ${escapar(evento.fecha)}` : ''}<br><strong>Cliente:</strong> ${escapar(email)}<br><strong>Total:</strong> ${new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(Number(compra.total))}<br><strong>Referencia:</strong> ${escapar(compra.id)}<br><strong>Productos:</strong> ${listaProductos}</p>`, { texto: 'Confirmar transferencias', url: `${SITE}/panel/administracion` }, undefined, 'Invitaciones Digitales · by NewTech'));
     return respuesta(200, {
       order_id: compra.id,
       event_id: eventId,

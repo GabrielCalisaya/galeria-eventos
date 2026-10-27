@@ -5,6 +5,7 @@
 .compra-cabecera { max-width: 680px; margin: 42px auto 34px; text-align: center; }
 .compra-cabecera h1 { margin: 0; font: 600 clamp(2.5rem, 7vw, 4rem)/.98 var(--serif); color: var(--tinta-fuerte); }
 .compra-cabecera > p:last-child { margin: 14px 0 0; color: var(--suave); }
+.compra-alerta.compra-activando { max-width: 680px; margin: -14px auto 26px; text-align: center; }
 .compra-layout { max-width: 1120px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(280px, .8fr); align-items: start; gap: 22px; }
 .compra-formularios { display: grid; gap: 16px; }
 .compra-bloque, .compra-resumen { border: 1px solid var(--linea); border-radius: 22px; background: rgba(255,253,249,.92); box-shadow: var(--sombra-suave); }
