@@ -29,7 +29,7 @@ export async function enviarCorreo(para: string, asunto: string, html: string): 
 }
 
 /** Plantilla simple con la estética de la galería (los clientes de correo no aceptan CSS moderno). */
-export function plantilla(titulo: string, cuerpo: string, boton?: { texto: string; url: string }, boton2?: { texto: string; url: string }) {
+export function plantilla(titulo: string, cuerpo: string, boton?: { texto: string; url: string }, boton2?: { texto: string; url: string }, marca = 'Galería en vivo · by NewTech') {
   const btn = (b: { texto: string; url: string }, primario: boolean) =>
     `<a href="${b.url}" style="display:inline-block;margin:6px 6px 0 0;padding:14px 24px;border-radius:999px;background:${
       primario ? '#492e3b' : '#ffffff'
@@ -38,7 +38,7 @@ export function plantilla(titulo: string, cuerpo: string, boton?: { texto: strin
     )}</a>`;
   return `<!doctype html><html><body style="margin:0;background:#f5f0e9;padding:24px 12px;font-family:Arial,sans-serif;color:#30262b">
   <div style="max-width:560px;margin:0 auto;background:#fffdf9;border:1px solid #eadfd5;border-radius:24px;padding:32px 28px">
-    <p style="margin:0 0 6px;font-size:12px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:#91694d">Galería en vivo · by NewTech</p>
+    <p style="margin:0 0 6px;font-size:12px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:#91694d">${escapar(marca)}</p>
     <h1 style="margin:0 0 18px;font-family:Georgia,serif;font-size:30px;line-height:1.1;color:#1d1619">${escapar(titulo)}</h1>
     <div style="font-size:15px;line-height:1.6">${cuerpo}</div>
     <div style="margin-top:20px">${boton ? btn(boton, true) : ''}${boton2 ? btn(boton2, false) : ''}</div>

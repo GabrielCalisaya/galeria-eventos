@@ -5119,3 +5119,17 @@ button.idea:hover {
   max-width: 56ch;
   color: var(--suave);
 }
+
+/* Administración de transferencias */
+.administracion-transferencias .volver { display: inline-block; margin-bottom: 18px; }
+.admin-transferencias-lista { display: grid; gap: 14px; margin: 24px 0; padding: 0; list-style: none; }
+.admin-transferencia { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 22px; }
+.admin-transferencia h2 { margin: 0 0 8px; font: 600 1.5rem/1.1 var(--serif); }
+.admin-transferencia p { margin: 5px 0; overflow-wrap: anywhere; }
+.admin-transferencia-datos { min-width: 0; }
+.admin-transferencia-accion { display: grid; justify-items: end; gap: 12px; flex: 0 0 auto; }
+.admin-transferencia-accion > strong { color: var(--ciruela); font-size: 1.35rem; }
+@media (max-width: 640px) {
+  .admin-transferencia { display: grid; }
+  .admin-transferencia-accion { justify-items: stretch; }
+}

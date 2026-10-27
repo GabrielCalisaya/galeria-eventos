@@ -1,0 +1,102 @@
+.compra-pagina { min-height: 100dvh; padding: 0 18px 28px; background: radial-gradient(ellipse at top, #fffaf5 0, #f5f0e9 64%); }
+.compra-barra { max-width: 1120px; margin: 0 auto; min-height: 78px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--linea); }
+.compra-barra > a:first-child { text-decoration: none; }
+.compra-volver { font-weight: 700; text-decoration: none; }
+.compra-cabecera { max-width: 680px; margin: 42px auto 34px; text-align: center; }
+.compra-cabecera h1 { margin: 0; font: 600 clamp(2.5rem, 7vw, 4rem)/.98 var(--serif); color: var(--tinta-fuerte); }
+.compra-cabecera > p:last-child { margin: 14px 0 0; color: var(--suave); }
+.compra-layout { max-width: 1120px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(280px, .8fr); align-items: start; gap: 22px; }
+.compra-formularios { display: grid; gap: 16px; }
+.compra-bloque, .compra-resumen { border: 1px solid var(--linea); border-radius: 22px; background: rgba(255,253,249,.92); box-shadow: var(--sombra-suave); }
+.compra-bloque { padding: clamp(18px, 4vw, 28px); }
+.compra-paso { display: flex; align-items: flex-start; gap: 13px; margin-bottom: 20px; }
+.compra-paso > span { display: grid; place-items: center; flex: 0 0 34px; height: 34px; border-radius: 50%; background: var(--ciruela); color: white; font-weight: 800; }
+.compra-paso h2, .compra-ficha h2 { margin: 0; font: 600 1.55rem/1.15 var(--serif); color: var(--tinta-fuerte); }
+.compra-paso p { margin: 4px 0 0; color: var(--suave); font-size: .9rem; }
+.compra-paso .etiqueta { margin: 0 0 4px; font-size: .65rem; }
+.compra-opciones { display: grid; gap: 9px; margin: 18px 0 0; padding: 0; border: 0; min-width: 0; }
+.compra-opciones legend { margin-bottom: 8px; padding: 0; font-weight: 800; }
+.compra-opciones legend small, .compra-pagina .campo small { color: var(--suave); font-size: .78rem; font-weight: 500; }
+.compra-opcion { position: relative; min-height: 62px; display: flex; align-items: center; gap: 12px; padding: 11px 13px; border: 1px solid var(--linea-fuerte); border-radius: 15px; background: #fff; cursor: pointer; transition: border-color .16s, background .16s, box-shadow .16s; }
+.compra-opcion:hover, .compra-opcion.seleccionada { border-color: var(--rosa); background: #fffaf7; }
+.compra-opcion.seleccionada { box-shadow: 0 0 0 3px rgba(199,119,109,.12); }
+.compra-opcion input { position: absolute; opacity: 0; pointer-events: none; }
+.compra-radio { flex: 0 0 19px; height: 19px; border: 1.5px solid #b6a39a; border-radius: 50%; background: white; }
+.compra-opcion.seleccionada .compra-radio { border: 6px solid var(--rosa); }
+.compra-opcion:focus-within { outline: 2px solid var(--ciruela); outline-offset: 2px; }
+.compra-opcion-texto { display: grid; gap: 2px; min-width: 0; }
+.compra-opcion-texto strong { font-size: .94rem; }
+.compra-opcion-texto small { color: var(--suave); font-size: .8rem; line-height: 1.35; }
+.compra-incluye { margin-left: auto; color: var(--dorado); font-size: .72rem; font-weight: 800; text-align: right; }
+.compra-bloque .campo { margin-top: 13px; }
+.compra-metodos { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+.compra-metodos label { display: flex; align-items: flex-start; gap: 10px; min-height: 76px; padding: 14px; border: 1px solid var(--linea-fuerte); border-radius: 15px; background: #fff; cursor: pointer; }
+.compra-metodos label.seleccionada { border-color: var(--rosa); box-shadow: 0 0 0 3px rgba(199,119,109,.12); }
+.compra-metodos input { margin: 4px 0 0; accent-color: var(--ciruela); }
+.compra-metodos label span { display: grid; gap: 3px; }
+.compra-metodos small { color: var(--suave); font-size: .79rem; line-height: 1.35; }
+.compra-resumen { position: sticky; top: 18px; padding: 24px; }
+.compra-resumen h2 { margin: 0 0 15px; font: 600 1.8rem/1 var(--serif); }
+.compra-lineas { display: grid; gap: 12px; list-style: none; margin: 0; padding: 0; }
+.compra-lineas li, .compra-descuento, .compra-total { display: flex; justify-content: space-between; gap: 12px; }
+.compra-lineas li { color: var(--suave); font-size: .9rem; }
+.compra-lineas strong { white-space: nowrap; color: var(--tinta); }
+.compra-descuento { margin: 14px 0; color: var(--exito); font-size: .88rem; }
+.compra-total { margin-top: 17px; padding-top: 16px; border-top: 1px solid var(--linea); align-items: baseline; }
+.compra-total span { font-weight: 800; }
+.compra-total strong { color: var(--ciruela); font-size: 1.8rem; line-height: 1; white-space: nowrap; }
+.compra-legal, .compra-seguridad { color: var(--suave); font-size: .76rem; line-height: 1.45; }
+.compra-resumen-vacio { padding: 18px 0 10px; text-align: center; color: var(--suave); }
+.compra-resumen-vacio span { color: var(--rosa); font-size: 2rem; }
+.compra-resumen .boton { margin-top: 13px; }
+.compra-cuenta, .compra-seguridad { margin: 14px 0 0; text-align: center; }
+.compra-cuenta a { font-weight: 800; }
+.compra-pagina > .pie-sitio.compacto { max-width: none; margin: 34px -18px 0; }
+.compra-detalle-pagina { padding-bottom: 56px; }
+.compra-detalle { max-width: 900px; }
+.compra-detalle > .volver { display: inline-block; margin: 8px 0 22px; }
+.compra-detalle-titulo { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
+.compra-detalle-titulo h1 { overflow-wrap: anywhere; }
+.compra-detalle-titulo p:last-child { margin: 8px 0 0; color: var(--suave); }
+.compra-resumen-pedido { display: grid; grid-template-columns: minmax(0,1fr) minmax(260px,.85fr); gap: 26px; padding: 24px; }
+.compra-transferencia { display: flex; align-items: flex-start; gap: 13px; padding: 18px; border-radius: 17px; background: #f7f0e8; }
+.compra-transfer-icon { flex: 0 0 35px; display: grid; place-items: center; height: 35px; border-radius: 50%; color: white; background: var(--ciruela); font-size: 1.1rem; }
+.compra-transferencia h2 { margin: 0 0 7px; font: 600 1.4rem/1.1 var(--serif); }
+.compra-transferencia p { margin: 0 0 12px; color: var(--suave); font-size: .9rem; }
+.compra-transferencia .boton { margin: 12px 0 8px; text-decoration: none; }
+.compra-transferencia small { display: block; color: var(--suave); font-size: .75rem; }
+.compra-telefono { display: block; font-size: 1.2rem; letter-spacing: .04em; }
+.compra-ficha { margin-top: 20px; padding: clamp(18px, 4vw, 30px); }
+.compra-campos { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 5px 18px; }
+.compra-campos > .campo:nth-of-type(4), .compra-campos > .campo:nth-of-type(6), .compra-campos > .campo:nth-of-type(7), .compra-campos > .campo:nth-of-type(9), .compra-campos > .campo:nth-of-type(15), .compra-checklist { grid-column: 1 / -1; }
+.compra-checklist { margin-top: 12px; padding: 18px; border-radius: 16px; background: #f7f0e8; }
+.compra-checklist h3 { margin: 0; font: 600 1.3rem/1.15 var(--serif); }
+.compra-checklist p { margin: 6px 0; color: var(--suave); }
+.compra-checklist ul { margin: 8px 0 12px; padding-left: 20px; color: var(--tinta); }
+.compra-checklist a { font-weight: 800; }
+.compra-acciones-ficha { display: flex; flex-wrap: wrap; gap: 10px; grid-column: 1 / -1; margin-top: 10px; }
+.compra-acciones-ficha .boton { flex: 1 1 220px; }
+.compra-alerta { margin: 16px 0; padding: 14px 16px; border: 1px solid var(--linea-fuerte); border-radius: 14px; background: #fffaf5; color: var(--tinta); }
+.compra-alerta a { font-weight: 800; }
+.compra-ayuda-pago { color: var(--suave); }
+@media (max-width: 760px) {
+  .compra-pagina { padding-inline: 14px; }
+  .compra-pagina > .pie-sitio.compacto { margin-inline: -14px; }
+  .compra-barra { min-height: 68px; }
+  .compra-cabecera { margin: 30px auto 24px; }
+  .compra-layout { grid-template-columns: 1fr; }
+  .compra-resumen { position: static; grid-row: 1; }
+  .compra-incluye { max-width: 88px; }
+  .compra-resumen-pedido { grid-template-columns: 1fr; }
+  .compra-detalle-titulo { align-items: flex-start; flex-direction: column; }
+}
+@media (max-width: 520px) {
+  .compra-metodos, .compra-campos { grid-template-columns: 1fr; }
+  .compra-campos > .campo, .compra-checklist { grid-column: 1; }
+  .compra-bloque { padding: 18px 15px; }
+  .compra-resumen { padding: 20px; }
+  .compra-opcion { gap: 9px; padding-inline: 10px; }
+  .compra-opcion-texto strong { font-size: .88rem; }
+  .compra-total strong { font-size: 1.55rem; }
+  .compra-detalle h1 { font-size: 2.5rem; }
+}
