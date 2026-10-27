@@ -186,7 +186,7 @@ export default function Inicio() {
           <div className="banda-demo">
             <div className="banda-demo-fotos" aria-hidden="true">
               {FOTOS_DEMO.slice(3, 7).map((f) => (
-                <img key={f.id} src={f.key_thumb} alt="" loading="lazy" />
+                <img key={f.id} src={f.key_thumb} alt="" />
               ))}
             </div>
             <div className="banda-demo-texto">
@@ -222,7 +222,7 @@ export default function Inicio() {
                     <li key={x}>{x}</li>
                   ))}
                   <li>
-                    Hasta {p.limite_fotos.toLocaleString('es-AR')} fotos · álbum {p.meses_album} meses
+                    Hasta {p.limite_fotos.toLocaleString('es-AR')} fotos
                   </li>
                 </ul>
                 {p.pack === 'completo' && (

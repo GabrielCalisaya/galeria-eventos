@@ -38,6 +38,7 @@ const PAGINAS = [
   ['demo-pantalla', '/demo/pantalla'],
   ['entrar', '/entrar'],
   ['terminos', '/terminos'],
+  ['privacidad', '/privacidad'],
   ['devoluciones', '/devoluciones'],
   ['arrepentimiento', '/arrepentimiento'],
 ];
@@ -56,7 +57,18 @@ for (const [nombreVista, vista] of VISTAS) {
     const errores = [];
     pagina.on('pageerror', (e) => errores.push(String(e)));
     pagina.on('console', (m) => m.type() === 'error' && errores.push(m.text()));
+    pagina.on('requestfailed', (r) => errores.push(`falló ${r.url()} (${r.failure()?.errorText})`));
+    pagina.on('response', (r) => r.status() >= 400 && errores.push(`HTTP ${r.status()} ${r.url()}`));
     await pagina.goto(`http://localhost:4173${ruta}`, { waitUntil: 'networkidle', timeout: 45000 }).catch((e) => errores.push(String(e)));
+    // Recorre la página para que carguen las imágenes diferidas (loading="lazy").
+    await pagina.evaluate(async () => {
+      for (let y = 0; y < document.body.scrollHeight; y += 500) {
+        window.scrollTo(0, y);
+        await new Promise((r) => setTimeout(r, 120));
+      }
+      window.scrollTo(0, 0);
+    });
+    await pagina.waitForLoadState('networkidle').catch(() => {});
     await pagina.waitForTimeout(ruta.includes('pantalla') ? 2500 : 1200);
     const ancho = await pagina.evaluate(() => document.documentElement.scrollWidth);
     await pagina.screenshot({

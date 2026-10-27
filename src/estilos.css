@@ -2584,7 +2584,9 @@ a {
 
 .nav-boton span {
   display: block;
+  width: 20px;
   height: 2px;
+  flex: none;
   border-radius: 2px;
   background: var(--ciruela);
   transition: transform 180ms ease, opacity 180ms ease;
@@ -2644,17 +2646,13 @@ a {
 
 .seccion-suave {
   max-width: none;
+  padding-inline: max(clamp(16px, 4vw, 40px), calc((100% - 1100px) / 2));
   background: linear-gradient(180deg, rgba(255, 250, 245, 0.9), rgba(243, 232, 222, 0.7));
   border-block: 1px solid var(--linea);
 }
 
-.seccion-suave > * {
-  max-width: 1100px;
-  margin-inline: auto;
-}
-
-.seccion-suave > .etiqueta {
-  display: flex;
+.seccion:has(> .cierre) {
+  padding-top: 0;
 }
 
 .seccion-titulo {
@@ -2858,12 +2856,12 @@ a {
 }
 
 .burbuja-1 {
-  top: 16%;
+  top: 46%;
   left: 0;
 }
 
 .burbuja-2 {
-  bottom: 14%;
+  bottom: 10%;
   right: 0;
   animation-delay: -3s;
 }
@@ -3345,6 +3343,9 @@ a {
 .boton-arrepentimiento {
   margin-top: 18px;
   min-height: 42px;
+  padding: 0 18px;
+  white-space: nowrap;
+  font-size: 0.88rem;
   background: transparent;
   color: #fff !important;
   border: 1.5px solid var(--durazno);
@@ -3527,6 +3528,21 @@ a {
 .demo-momento button[aria-pressed='true'] {
   background: #fff;
   color: var(--ciruela);
+}
+
+.invitado.noche .demo-trivia,
+.invitado.noche .trivia-capa {
+  /* La tarjeta de la trivia se mantiene clara para leerse bien */
+  --crema: #f5f0e9;
+  --blanco: #fffdf9;
+  --linea: #eadfd5;
+  --linea-fuerte: #dccdc0;
+  --tinta: #30262b;
+  --tinta-fuerte: #1d1619;
+  --suave: #73656a;
+  --dorado: #91694d;
+  color: var(--tinta);
+  color-scheme: light;
 }
 
 .demo-trivia {
@@ -3716,7 +3732,44 @@ a {
     grid-template-columns: 1fr;
   }
   .quien-foto {
-    width: min(220px, 70%);
+    width: min(180px, 52%);
+  }
+  .telefono {
+    width: min(250px, 68vw);
+  }
+  .telefono-pantalla {
+    aspect-ratio: 9 / 16;
+  }
+  .tel-portada {
+    padding-top: 44px;
+  }
+  .pasos li,
+  .funciones li {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 14px;
+    align-items: center;
+  }
+  .pasos li {
+    padding: 20px 18px;
+  }
+  .pasos h3,
+  .funciones h3 {
+    margin: 0;
+  }
+  .pasos p,
+  .funciones p {
+    grid-column: 1 / -1;
+    margin-top: 8px;
+  }
+  .funcion-icono {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    font-size: 1.15rem;
+  }
+  .banda-demo-fotos img {
+    aspect-ratio: 1;
   }
   .pie-columnas {
     grid-template-columns: 1fr;
