@@ -112,6 +112,7 @@ export default function CompraEvento() {
         idempotency_key: compra.idempotency_key,
         event_title: compra.titulo_evento, event_type: compra.tipo_evento, event_date: compra.fecha_evento,
         gallery_pack: compra.gallery_pack, invitation_tier: compra.invitation_tier, payment_method: 'mercado_pago',
+        ...((compra.productos ?? []).some((p) => p.tipo === 'mejora') ? { mejora: true, event_id: compra.event_id } : {}),
       });
       irAMercadoPago(data.url);
     } catch (e) {
@@ -133,6 +134,7 @@ export default function CompraEvento() {
   }
 
   const pagada = PAGADA.includes(compra.estado);
+  const esMejora = (compra.productos ?? []).some((p) => p.tipo === 'mejora');
   const fichaHabilitada = Boolean(compra.invitation_tier) && ['pagada', 'transferencia_pendiente'].includes(compra.estado);
   const sinPagar = compra.estado === 'pendiente_pago' || compra.estado === 'cancelada';
   const puedePagarMp = sinPagar && (!pago || pago.metodo === 'mercado_pago') && pago?.estado !== 'en_proceso' && !esperando;
@@ -189,7 +191,9 @@ export default function CompraEvento() {
         )}
 
         {compra.event_id && (pagada ? (
-          <p className="compra-alerta">Tu galería ya está activa. <Link to={`/panel/${compra.event_id}`}>Abrir la galería</Link></p>
+          <p className="compra-alerta">{esMejora ? 'Tu galería ya tiene el pack nuevo.' : 'Tu galería ya está activa.'} <Link to={`/panel/${compra.event_id}?bienvenida=1`}>Abrir la galería</Link></p>
+        ) : esMejora ? (
+          <p className="compra-alerta">Tu galería sigue funcionando con su pack actual; el pack nuevo se aplica solo cuando se confirme el pago.</p>
         ) : (
           <p className="compra-alerta">Tu galería ya está creada y se activa sola cuando se confirme el pago. La encontrás en <Link to="/panel">Mis eventos</Link>.</p>
         ))}

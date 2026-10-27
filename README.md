@@ -144,7 +144,7 @@ npm run dev
 
 ## Notas
 
-- Las galerías nacen en **borrador** y se activan solas cuando se confirma el pago. La mejora de pack de una galería activa se paga con Mercado Pago desde su panel.
+- Las galerías nacen en **borrador** y se activan solas cuando se confirma el pago. La mejora de pack de una galería activa (se paga la diferencia) también es un pedido: Mercado Pago o transferencia, y si pasa a Completo el cliente recibe la ficha de invitación.
 - Una subida que se corta a mitad de camino deja una fila "pendiente" que no se muestra; más adelante una tarea programada las va a limpiar.
 - Las fotos HEIC de iPhone se convierten solas al elegirlas desde Safari. En Chrome de escritorio no se pueden leer y se marcan con error.
 
