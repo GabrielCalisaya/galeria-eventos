@@ -1,0 +1,98 @@
+[
+  {
+    "pagina": "inicio",
+    "vista": "celular",
+    "desbordeHorizontal": false,
+    "errores": []
+  },
+  {
+    "pagina": "demo",
+    "vista": "celular",
+    "desbordeHorizontal": false,
+    "errores": []
+  },
+  {
+    "pagina": "demo-pantalla",
+    "vista": "celular",
+    "desbordeHorizontal": false,
+    "errores": []
+  },
+  {
+    "pagina": "entrar",
+    "vista": "celular",
+    "desbordeHorizontal": false,
+    "errores": []
+  },
+  {
+    "pagina": "terminos",
+    "vista": "celular",
+    "desbordeHorizontal": false,
+    "errores": []
+  },
+  {
+    "pagina": "privacidad",
+    "vista": "celular",
+    "desbordeHorizontal": false,
+    "errores": []
+  },
+  {
+    "pagina": "devoluciones",
+    "vista": "celular",
+    "desbordeHorizontal": false,
+    "errores": []
+  },
+  {
+    "pagina": "arrepentimiento",
+    "vista": "celular",
+    "desbordeHorizontal": false,
+    "errores": []
+  },
+  {
+    "pagina": "inicio",
+    "vista": "compu",
+    "desbordeHorizontal": false,
+    "errores": []
+  },
+  {
+    "pagina": "demo",
+    "vista": "compu",
+    "desbordeHorizontal": false,
+    "errores": []
+  },
+  {
+    "pagina": "demo-pantalla",
+    "vista": "compu",
+    "desbordeHorizontal": false,
+    "errores": []
+  },
+  {
+    "pagina": "entrar",
+    "vista": "compu",
+    "desbordeHorizontal": false,
+    "errores": []
+  },
+  {
+    "pagina": "terminos",
+    "vista": "compu",
+    "desbordeHorizontal": false,
+    "errores": []
+  },
+  {
+    "pagina": "privacidad",
+    "vista": "compu",
+    "desbordeHorizontal": false,
+    "errores": []
+  },
+  {
+    "pagina": "devoluciones",
+    "vista": "compu",
+    "desbordeHorizontal": false,
+    "errores": []
+  },
+  {
+    "pagina": "arrepentimiento",
+    "vista": "compu",
+    "desbordeHorizontal": false,
+    "errores": []
+  }
+]
