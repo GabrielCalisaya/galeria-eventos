@@ -8,19 +8,18 @@ import { linkWhatsappNegocio } from '../lib/negocio';
 
 type Props = {
   evento: Evento;
-  /** 'activar' para un evento en borrador; 'mejorar' para pasar a un pack superior. */
-  modo: 'activar' | 'mejorar';
   estadoRetorno?: string | null;
 };
 
-export default function ElegirPack({ evento, modo, estadoRetorno }: Props) {
+/** Mejora de pack de una galería activa: se paga la diferencia con Mercado Pago. Las galerías nuevas usan el checkout. */
+export default function ElegirPack({ evento, estadoRetorno }: Props) {
   const precios = usePrecios();
   const { avisar } = useDialogos();
-  const [elegido, setElegido] = useState<Evento['pack']>(modo === 'mejorar' ? 'experiencia' : 'experiencia');
+  const [elegido, setElegido] = useState<Evento['pack']>('experiencia');
   const [yendo, setYendo] = useState(false);
 
   const actual = precios?.find((p) => p.pack === evento.pack);
-  const opciones = (precios ?? []).filter((p) => (modo === 'mejorar' ? actual && p.orden > actual.orden : true));
+  const opciones = (precios ?? []).filter((p) => actual && p.orden > actual.orden);
 
   useEffect(() => {
     if (opciones.length && !opciones.some((p) => p.pack === elegido)) setElegido(opciones[0].pack);
@@ -40,25 +39,13 @@ export default function ElegirPack({ evento, modo, estadoRetorno }: Props) {
   if (opciones.length === 0) return null;
 
   const seleccion = opciones.find((p) => p.pack === elegido) ?? opciones[0];
-  const montoFinal = modo === 'mejorar' && actual ? Math.max(1, seleccion.precio - actual.precio) : seleccion.precio;
+  const montoFinal = actual ? Math.max(1, seleccion.precio - actual.precio) : seleccion.precio;
 
   return (
-    <section className={modo === 'activar' ? 'tarjeta activar' : 'tarjeta activar mejorar'}>
-      {modo === 'activar' ? (
-        <>
-          <p className="etiqueta">Último paso</p>
-          <h2>Elegí tu pack y activá la galería</h2>
-          <p className="ayuda">
-            El QR empieza a funcionar apenas se confirma el pago. Pagás con tarjeta, en cuotas o con dinero en Mercado Pago.
-          </p>
-        </>
-      ) : (
-        <>
-          <p className="etiqueta">Mejorá tu pack</p>
-          <h2>Sumá la pantalla del salón y la trivia</h2>
-          <p className="ayuda">Pagás solo la diferencia con tu pack actual.</p>
-        </>
-      )}
+    <section className="tarjeta activar mejorar">
+      <p className="etiqueta">Mejorá tu pack</p>
+      <h2>Sumá la pantalla del salón y la trivia</h2>
+      <p className="ayuda">Pagás solo la diferencia con tu pack actual.</p>
 
       {estadoRetorno === 'rechazado' && (
         <p className="aviso-falta">El pago no se completó. Podés intentarlo de nuevo con otro medio de pago.</p>
@@ -72,7 +59,7 @@ export default function ElegirPack({ evento, modo, estadoRetorno }: Props) {
 
       <div className="packs" role="radiogroup" aria-label="Packs">
         {opciones.map((p) => {
-          const monto = modo === 'mejorar' && actual ? Math.max(1, p.precio - actual.precio) : p.precio;
+          const monto = actual ? Math.max(1, p.precio - actual.precio) : p.precio;
           return (
             <button
               key={p.pack}
@@ -86,7 +73,7 @@ export default function ElegirPack({ evento, modo, estadoRetorno }: Props) {
               <span className="pack-nombre">{p.nombre}</span>
               <span className="pack-precio">
                 {formatearPrecio(monto, p.moneda)}
-                {modo === 'mejorar' && <small> de diferencia</small>}
+                <small> de diferencia</small>
               </span>
               <ul className="pack-incluye">
                 {INCLUYE[p.pack].map((x) => (
@@ -104,7 +91,7 @@ export default function ElegirPack({ evento, modo, estadoRetorno }: Props) {
       {opciones.some((p) => p.pack === 'completo') && (
         <p className="nota-invitacion">
           <span aria-hidden="true">♡</span> El pack Completo incluye una <strong>invitación digital Estándar</strong>: una web
-          con los datos del evento, ubicación y confirmación de asistencia. Después del pago te contactamos para armarla.{' '}
+          con los datos del evento, ubicación y confirmación de asistencia. Después del pago coordinamos los datos por WhatsApp.{' '}
           <a href={MUESTRAS_INVITACIONES} target="_blank" rel="noreferrer">
             Ver muestras de invitaciones ↗
           </a>

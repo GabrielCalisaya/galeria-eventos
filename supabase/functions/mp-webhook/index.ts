@@ -231,7 +231,7 @@ async function avisarCompra(
       <strong>Cliente:</strong> ${escapar(nombre || 'Anfitrión')} · ${escapar(email)}<br>
       <strong>Referencia:</strong> ${escapar(compra.id)}<br><strong>Importe:</strong> ${pesos(Number(pagoMp.transaction_amount))}<br>
       <strong>Productos:</strong> ${lista}</p>`,
-      { texto: 'Ver la compra', url: ordenUrl },
+      { texto: 'Ver pedidos', url: `${SITIO}/panel/administracion` },
       undefined,
       'Invitaciones Digitales · by NewTech',
     ));

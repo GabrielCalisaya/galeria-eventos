@@ -13,7 +13,7 @@ const PRECIOS_RESPALDO: PrecioPack[] = [
 ];
 
 const PASOS = [
-  { titulo: 'Creás tu evento', texto: 'Ponés los nombres, la fecha y elegís el estilo. Pagás con Mercado Pago y el QR queda listo.' },
+  { titulo: 'Creás tu evento', texto: 'Elegís tu pack, ponés los nombres y la fecha. Pagás con Mercado Pago o transferencia y el QR queda listo.' },
   { titulo: 'Ponés el QR en las mesas', texto: 'Imprimís las tarjetas de mesa o compartís el link. No hay que instalar nada.' },
   { titulo: 'Los invitados suben sus fotos', texto: 'Escanean con la cámara, escriben su nombre y suben. Las ves al instante.' },
   { titulo: 'Te llevás todas', texto: 'Cuando termina la fiesta, descargás el álbum completo en un .zip.' },
@@ -47,15 +47,15 @@ const PREGUNTAS = [
   },
   {
     p: '¿Cómo pago?',
-    r: 'Con Mercado Pago: tarjeta de crédito o débito, cuotas o dinero en cuenta. Los datos de tu tarjeta nunca pasan por nuestro sitio.',
+    r: 'Con Mercado Pago (tarjeta de crédito o débito, cuotas o dinero en cuenta) o por transferencia bancaria. Con Mercado Pago los datos de tu tarjeta nunca pasan por nuestro sitio; la transferencia se activa cuando confirmamos la acreditación.',
   },
   {
     p: '¿Me puedo arrepentir de la compra?',
     r: 'Sí. Tenés 10 días corridos desde la compra para arrepentirte con el Botón de arrepentimiento, sin costo. Los detalles están en Cambios y devoluciones.',
   },
   {
-    p: '¿Qué incluye la invitación digital del pack Completo?',
-    r: 'Una invitación digital Estándar: una página web con los datos del evento, la ubicación y la confirmación de asistencia, en el estilo que elijas de nuestras muestras.',
+    p: '¿Qué incluye la invitación digital?',
+    r: 'Una página web con los datos del evento, la ubicación y la confirmación de asistencia, en el estilo que elijas de nuestras muestras. El pack Completo trae la Estándar; también podés contratarla sola o en versión Premium o Deluxe. Después de pagar completás una ficha con los datos y te la preparamos.',
   },
   {
     p: '¿Sirve para cumpleaños de 15, aniversarios o eventos de empresa?',
@@ -106,7 +106,7 @@ export default function Inicio() {
             </div>
             <ul className="hero-garantias">
               <li>✓ Sin apps ni registro para los invitados</li>
-              <li>✓ Pago seguro con Mercado Pago</li>
+              <li>✓ Mercado Pago o transferencia</li>
               <li>✓ Soporte por WhatsApp las 24 horas</li>
             </ul>
           </div>
@@ -146,7 +146,7 @@ export default function Inicio() {
           </div>
           <div>
             <strong>Pago protegido</strong>
-            <span>Cobramos con Mercado Pago</span>
+            <span>Mercado Pago o transferencia</span>
           </div>
           <div>
             <strong>Fotos privadas</strong>
@@ -246,6 +246,23 @@ export default function Inicio() {
             ))}
           </div>
         </section>
+
+        <div className="inicio-combo">
+          <div className="tarjeta">
+            <div>
+              <h2>¿Necesitás la invitación digital?</h2>
+              <p>Contratala sola o sumala a tu galería: Estándar, Premium o Deluxe. Después de pagar completás la ficha y te la preparamos.</p>
+            </div>
+            <div className="acciones">
+              <Link className="boton boton-primario" to="/contratar?nivel=standard">
+                Elegir invitación
+              </Link>
+              <a className="boton" href={MUESTRAS_INVITACIONES} target="_blank" rel="noreferrer">
+                Ver muestras ↗
+              </a>
+            </div>
+          </div>
+        </div>
 
         {/* Quién está detrás */}
         <section className="seccion seccion-suave">

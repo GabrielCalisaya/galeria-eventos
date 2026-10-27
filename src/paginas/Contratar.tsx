@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Marca } from '../componentes/Marca';
 import { PieSitio } from '../componentes/Sitio';
 import { NOMBRES_TIPO, type TipoEvento } from '../lib/tipos';
-import { supabase } from '../lib/supabase';
+import { invocar, irAMercadoPago } from '../lib/funciones';
 import { esAnonima, useSesion } from '../lib/sesion';
 import './compra-evento.css';
 
@@ -14,8 +14,7 @@ const dinero = (n: number) => new Intl.NumberFormat('es-AR', { style: 'currency'
 const tipos = Object.entries(NOMBRES_TIPO) as [TipoEvento, string][];
 
 function mensajeError(error: unknown) {
-  if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') return error.message;
-  return 'No se pudo calcular el precio. Intentá de nuevo.';
+  return error instanceof Error && error.message ? error.message : 'No se pudo completar. Intentá de nuevo.';
 }
 
 export default function Contratar() {
@@ -35,16 +34,15 @@ export default function Contratar() {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
 
+  // Si hay que iniciar sesión, se vuelve con todo lo que ya se eligió y escribió.
   const retorno = useMemo(() => {
     const q = new URLSearchParams();
     if (pack) q.set('pack', pack);
     if (nivel) q.set('nivel', nivel);
-    if (eventoExistente) {
-      q.set('evento', eventoExistente);
-      if (titulo.trim()) q.set('titulo', titulo.trim());
-      q.set('tipo', tipo);
-      if (fecha) q.set('fecha', fecha);
-    }
+    if (eventoExistente) q.set('evento', eventoExistente);
+    if (titulo.trim()) q.set('titulo', titulo.trim());
+    q.set('tipo', tipo);
+    if (fecha) q.set('fecha', fecha);
     return `/contratar?${q.toString()}`;
   }, [pack, nivel, eventoExistente, titulo, tipo, fecha]);
 
@@ -53,13 +51,8 @@ export default function Contratar() {
     if (!pack && !nivel) { setCotizacion(null); return; }
     let vigente = true;
     setCargandoPrecio(true);
-    supabase.functions.invoke('cotizar-compra', { body: { gallery_pack: pack || null, invitation_tier: nivel || null } })
-      .then(({ data, error: invokeError }) => {
-        if (!vigente) return;
-        if (invokeError) throw invokeError;
-        if (data?.error) throw new Error(data.error);
-        setCotizacion(data as Cotizacion);
-      })
+    invocar<Cotizacion>('cotizar-compra', { gallery_pack: pack || null, invitation_tier: nivel || null })
+      .then((data) => { if (vigente) setCotizacion(data); })
       .catch((e: unknown) => { if (vigente) { setCotizacion(null); setError(mensajeError(e)); } })
       .finally(() => { if (vigente) setCargandoPrecio(false); });
     return () => { vigente = false; };
@@ -76,28 +69,27 @@ export default function Contratar() {
     try { idempotencyKey = sessionStorage.getItem(scope) ?? ''; } catch { /* almacenamiento opcional */ }
     if (!idempotencyKey) idempotencyKey = crypto.randomUUID();
     try { sessionStorage.setItem(scope, idempotencyKey); } catch { /* el servidor sigue protegiendo el pedido */ }
-    const { data, error: invokeError } = await supabase.functions.invoke('crear-compra', {
-      body: {
+    try {
+      const data = await invocar<{ order_id: string; payment_method?: string; url?: string }>('crear-compra', {
         idempotency_key: idempotencyKey,
         event_title: titulo.trim(), event_type: tipo, event_date: fecha || null,
         gallery_pack: pack || null, invitation_tier: nivel || null, payment_method: metodo,
         event_id: eventoExistente,
-      },
-    });
-    setEnviando(false);
-    if (invokeError || data?.error) return setError(data?.error ?? mensajeError(invokeError));
-    if (data?.payment_method === 'transferencia') { try { sessionStorage.removeItem(scope); } catch { /* almacenamiento opcional */ } return navegar(`/panel/compra/${data.order_id}?pago=transferencia`); }
-    let destinoPago: URL;
-    try { destinoPago = new URL(data?.url); } catch { return setError('No llegó el enlace seguro de pago. Escribinos para revisar el pedido.'); }
-    if (!['mercadopago.com.ar', 'mercadopago.com'].some((dominio) => destinoPago.hostname === dominio || destinoPago.hostname.endsWith(`.${dominio}`))) return setError('El enlace de pago no pertenece a Mercado Pago. Escribinos para revisar el pedido.');
-    try { sessionStorage.removeItem(scope); } catch { /* almacenamiento opcional */ }
-    window.location.assign(destinoPago.href);
+      });
+      try { sessionStorage.removeItem(scope); } catch { /* almacenamiento opcional */ }
+      if (data.payment_method === 'transferencia') return navegar(`/panel/compra/${data.order_id}?pago=transferencia`);
+      irAMercadoPago(data.url);
+    } catch (e) {
+      setError(mensajeError(e));
+      setEnviando(false);
+    }
   }
 
   return (
     <main className="compra-pagina">
       <header className="compra-barra"><Marca /><Link className="compra-volver" to={sesion && !esAnonima(sesion) ? '/panel' : '/'}>{sesion && !esAnonima(sesion) ? 'Mis eventos' : 'Volver'}</Link></header>
       <div className="compra-cabecera"><p className="etiqueta centrada">Tu evento, a tu manera</p><h1>Armá tu propuesta</h1><p>Elegí lo que necesitás. Vas a ver el precio actualizado antes de pagar.</p></div>
+      {eventoExistente && <p className="compra-alerta compra-activando">Estás activando la galería que ya creaste{titulo ? <> para <strong>{titulo}</strong></> : ''}: elegí el pack y, si querés, sumá la invitación.</p>}
       <form className="compra-layout" onSubmit={comprar}>
         <section className="compra-formularios" aria-label="Productos y datos del evento">
           <div className="compra-bloque">
@@ -109,7 +101,7 @@ export default function Contratar() {
                 ['basico', 'Galería Básica', 'Álbum compartido con QR'],
                 ['experiencia', 'Experiencia', 'Galería, pantalla en vivo y trivia'],
                 ['completo', 'Completo', 'Experiencia + invitación Estándar incluida'],
-              ].map(([value, name, desc]) => <label className={`compra-opcion ${pack === value ? 'seleccionada' : ''}`} key={value || 'ninguna'}>
+              ].filter(([value]) => !eventoExistente || value !== '').map(([value, name, desc]) => <label className={`compra-opcion ${pack === value ? 'seleccionada' : ''}`} key={value || 'ninguna'}>
                 <input type="radio" name="pack" checked={pack === value} onChange={() => { setPack(value as Pack | ''); if (value === 'completo') setNivel('standard'); }} />
                 <span className="compra-radio" aria-hidden="true" /><span className="compra-opcion-texto"><strong>{name}</strong><small>{desc}</small></span>
                 {value === 'completo' && <span className="compra-incluye">Incluye Estándar</span>}
@@ -131,10 +123,10 @@ export default function Contratar() {
 
           <div className="compra-bloque">
             <div className="compra-paso"><span>2</span><div><h2>Contanos del evento</h2><p>Estos datos identifican la compra y preparan tu galería.</p></div></div>
-            <label className="campo"><span>Nombre del evento</span><input required maxLength={120} value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Sofía y Martín" /></label>
+            <label className="campo"><span>Nombre del evento</span><input required maxLength={120} value={titulo} readOnly={Boolean(eventoExistente)} onChange={(e) => setTitulo(e.target.value)} placeholder="Sofía y Martín" /></label>
             <div className="campos-dobles">
-              <label className="campo"><span>Tipo de evento</span><select value={tipo} onChange={(e) => setTipo(e.target.value as TipoEvento)}>{tipos.map(([value, name]) => <option key={value} value={value}>{name}</option>)}</select></label>
-              <label className="campo"><span>Fecha <small>Opcional</small></span><input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} /></label>
+              <label className="campo"><span>Tipo de evento</span><select value={tipo} disabled={Boolean(eventoExistente)} onChange={(e) => setTipo(e.target.value as TipoEvento)}>{tipos.map(([value, name]) => <option key={value} value={value}>{name}</option>)}</select></label>
+              <label className="campo"><span>Fecha <small>Opcional</small></span><input type="date" value={fecha} readOnly={Boolean(eventoExistente)} onChange={(e) => setFecha(e.target.value)} /></label>
             </div>
           </div>
 
