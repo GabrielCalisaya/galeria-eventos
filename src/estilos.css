@@ -2635,6 +2635,9 @@ a {
     margin-top: 14px;
     min-height: 50px;
   }
+  .nav-cta + .nav-cta {
+    margin-top: 8px;
+  }
 }
 
 /* Secciones */
