@@ -9,6 +9,7 @@ import { linkWhatsappNegocio } from '../lib/negocio';
 import '../paginas/compra-evento.css';
 
 type Metodo = 'mercado_pago' | 'transferencia';
+type TipoInvitacion = 'wedding' | 'birthday' | 'xv' | '';
 
 /**
  * Mejora de pack de una galería activa: se paga la diferencia con Mercado Pago o transferencia.
@@ -20,6 +21,9 @@ export default function ElegirPack({ evento }: { evento: Evento }) {
   const navegar = useNavigate();
   const [elegido, setElegido] = useState<Evento['pack']>('experiencia');
   const [metodo, setMetodo] = useState<Metodo>('mercado_pago');
+  const formatoSugerido: TipoInvitacion = evento.tipo === 'quince' ? 'xv' : evento.tipo === 'cumpleanos' ? 'birthday' : ['casamiento', 'aniversario'].includes(evento.tipo) ? 'wedding' : '';
+  const [tipoInvitacion, setTipoInvitacion] = useState<TipoInvitacion>(formatoSugerido);
+  const [fechaInvitacion, setFechaInvitacion] = useState(evento.fecha ?? '');
   const [yendo, setYendo] = useState(false);
 
   const actual = precios?.find((p) => p.pack === evento.pack);
@@ -32,7 +36,7 @@ export default function ElegirPack({ evento }: { evento: Evento }) {
   async function pagar() {
     setYendo(true);
     // La misma mejora repetida (doble clic, recarga) retoma el mismo pedido en el servidor.
-    const clave = `mejora:${evento.id}:${elegido}:${metodo}`;
+    const clave = `mejora:${evento.id}:${elegido}:${metodo}:${tipoInvitacion}:${fechaInvitacion}`;
     let idempotencyKey = '';
     try { idempotencyKey = sessionStorage.getItem(clave) ?? ''; } catch { /* almacenamiento opcional */ }
     if (!idempotencyKey) idempotencyKey = crypto.randomUUID();
@@ -42,6 +46,8 @@ export default function ElegirPack({ evento }: { evento: Evento }) {
         mejora: true,
         event_id: evento.id,
         gallery_pack: elegido,
+        event_date: fechaInvitacion || null,
+        invitation_type: elegido === 'completo' ? tipoInvitacion || null : null,
         payment_method: metodo,
         idempotency_key: idempotencyKey,
       });
@@ -97,6 +103,11 @@ export default function ElegirPack({ evento }: { evento: Evento }) {
         })}
       </div>
 
+      {elegido === 'completo' && <div className="campos-dobles">
+        <label className="campo"><span>Formato de invitación <small>Obligatorio</small></span><select required value={tipoInvitacion} onChange={(e) => setTipoInvitacion(e.target.value as TipoInvitacion)}><option value="" disabled>Elegí un formato</option><option value="wedding">Boda o aniversario</option><option value="xv">Fiesta de 15</option><option value="birthday">Cumpleaños</option></select></label>
+        {!evento.fecha && <label className="campo"><span>Fecha del evento <small>Obligatoria</small></span><input type="date" required value={fechaInvitacion} onChange={(e) => setFechaInvitacion(e.target.value)} /></label>}
+      </div>}
+
       {opciones.some((p) => p.pack === 'completo') && (
         <p className="nota-invitacion">
           <span aria-hidden="true">♡</span> El pack Completo incluye una <strong>invitación digital Estándar</strong>: una web
@@ -119,7 +130,7 @@ export default function ElegirPack({ evento }: { evento: Evento }) {
       </div>
 
       <div className="acciones">
-        <button type="button" className="boton boton-primario boton-grande" disabled={yendo} onClick={pagar}>
+        <button type="button" className="boton boton-primario boton-grande" disabled={yendo || (elegido === 'completo' && (!tipoInvitacion || !fechaInvitacion))} onClick={pagar}>
           {yendo
             ? metodo === 'transferencia' ? 'Preparando el pedido…' : 'Abriendo Mercado Pago…'
             : metodo === 'transferencia'

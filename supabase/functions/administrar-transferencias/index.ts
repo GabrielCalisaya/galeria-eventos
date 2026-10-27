@@ -7,6 +7,7 @@
 
 import { clienteAdmin, cors, respuesta, usuarioDelPedido } from '../_shared/comun.ts';
 import { enviarCorreo, escapar, plantilla } from '../_shared/correo.ts';
+import { sincronizarInvitacion } from '../_shared/invitaciones-wordpress.ts';
 
 const SITIO = (Deno.env.get('ALLOWED_ORIGIN') ?? '').replace(/\/$/, '');
 const pesos = (n: number) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n);
@@ -15,16 +16,19 @@ type Admin = ReturnType<typeof clienteAdmin>;
 
 async function avisarTransferenciaConfirmada(
   admin: Admin,
-  compra: { id: string; event_id: string | null; gallery_pack: string | null; total: number },
+  compra: { id: string; event_id: string | null; gallery_pack: string | null; invitation_tier: string | null; datos_completos: boolean; total: number },
+  invitacionPreparada: boolean,
 ): Promise<boolean> {
-  const { data } = await admin.from('compras').select('user_id,titulo_evento,invitation_tier').eq('id', compra.id).maybeSingle();
+  const { data } = await admin.from('compras').select('user_id,titulo_evento').eq('id', compra.id).maybeSingle();
   if (!data) return false;
   const { data: usuario } = await admin.auth.admin.getUserById(data.user_id);
   const email = usuario?.user?.email ?? '';
   const nombre = (usuario?.user?.user_metadata?.nombre as string | undefined) ?? '';
   const pasos = [
     compra.event_id && compra.gallery_pack ? 'Tu galería ya está activa con el pack que elegiste.' : '',
-    data.invitation_tier ? 'Completá la ficha de tu evento para que preparemos la invitación.' : '',
+    compra.invitation_tier ? compra.datos_completos
+      ? invitacionPreparada ? 'Recibimos la ficha y ya estamos preparando el borrador de tu invitación.' : 'Recibimos la ficha; necesitamos revisar la preparación antes de continuar.'
+      : 'Completá la ficha de tu evento para que preparemos la invitación.' : '',
   ].filter(Boolean).map((p) => `<li style="margin-bottom:6px">${escapar(p)}</li>`).join('');
   return enviarCorreo(
     email,
@@ -165,7 +169,7 @@ Deno.serve(async (req) => {
 
   const { data: compra, error: errorCompra } = await admin
     .from('compras')
-    .select('id,event_id,gallery_pack,estado,total,moneda')
+    .select('id,event_id,gallery_pack,invitation_tier,datos_completos,fecha_evento,estado,total,moneda')
     .eq('id', body.compra_id)
     .maybeSingle();
   if (errorCompra || !compra) return respuesta(404, { error: 'No encontramos esa compra.' });
@@ -223,6 +227,7 @@ Deno.serve(async (req) => {
     const { error: errorActivar } = await admin.from('events').update({
       estado: 'activo',
       pack: compra.gallery_pack,
+      ...(compra.fecha_evento ? { fecha: compra.fecha_evento } : {}),
       limite_fotos: precio.limite_fotos,
       vence_album: vence.toISOString().slice(0, 10),
     }).eq('id', compra.event_id).in('estado', ['borrador', 'activo']); // activo: mejora de pack
@@ -233,17 +238,21 @@ Deno.serve(async (req) => {
     }
   }
 
+  const sincronizacion = compra.invitation_tier && compra.datos_completos
+    ? await sincronizarInvitacion(admin, compra.id)
+    : null;
+
   // Aviso al cliente, una sola vez por compra. Si el correo falla, la marca se libera para poder reenviarlo.
   let correoEnviado = false;
   const { data: marcada } = await admin.from('compras').update({ email_notificado_at: ahora })
     .eq('id', compra.id).is('email_notificado_at', null).select('id').maybeSingle();
   if (marcada) {
-    correoEnviado = await avisarTransferenciaConfirmada(admin, compra);
+    correoEnviado = await avisarTransferenciaConfirmada(admin, compra, Boolean(sincronizacion?.ok));
     if (!correoEnviado) {
       await admin.from('compras').update({ email_notificado_at: null }).eq('id', compra.id);
       console.error('No se pudo enviar el aviso de transferencia confirmada', compra.id);
     }
   }
 
-  return respuesta(200, { confirmado: true, compra_id: compra.id, event_id: compra.event_id, correo_enviado: correoEnviado });
+  return respuesta(200, { confirmado: true, compra_id: compra.id, event_id: compra.event_id, correo_enviado: correoEnviado, aviso_preparacion: sincronizacion && !sincronizacion.ok ? sincronizacion.error : undefined });
 });

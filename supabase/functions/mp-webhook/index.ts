@@ -4,6 +4,7 @@
 
 import { clienteAdmin } from '../_shared/comun.ts';
 import { ADMIN_EMAIL, enviarCorreo, escapar, linkWhatsapp, plantilla } from '../_shared/correo.ts';
+import { sincronizarInvitacion } from '../_shared/invitaciones-wordpress.ts';
 
 const SITIO = (Deno.env.get('ALLOWED_ORIGIN') ?? '').replace(/\/$/, '');
 const NOMBRES_PACK: Record<string, string> = { basico: 'Básico', experiencia: 'Experiencia', completo: 'Completo' };
@@ -105,7 +106,7 @@ Deno.serve(async (req) => {
 
     if (estadoCompraPago === 'aprobado' && montoCompraOk) {
       const { data: compra } = await admin.from('compras')
-        .select('id,user_id,event_id,titulo_evento,tipo_evento,fecha_evento,gallery_pack,invitation_tier,productos,total,moneda')
+        .select('id,user_id,event_id,titulo_evento,tipo_evento,tipo_invitacion,fecha_evento,gallery_pack,invitation_tier,datos_completos,estado,productos,total,moneda')
         .eq('id', compraPago.compra_id)
         .maybeSingle();
       if (!compra) return new Response('compra no encontrada', { status: 500 });
@@ -113,6 +114,7 @@ Deno.serve(async (req) => {
       // Solo avanza desde estados pendientes: un aviso repetido no devuelve a "pagada" una compra en preparación o entregada.
       await admin.from('compras').update({ estado: 'pagada', updated_at: new Date().toISOString() })
         .eq('id', compra.id).in('estado', ['pendiente_pago', 'transferencia_pendiente']);
+      if (compra.invitation_tier && compra.datos_completos) await sincronizarInvitacion(admin, compra.id);
       if (compra.event_id && compra.gallery_pack) {
         const { data: precio } = await admin.from('precios_pack').select('limite_fotos,meses_album').eq('pack', compra.gallery_pack).maybeSingle();
         const vence = new Date();
@@ -120,6 +122,7 @@ Deno.serve(async (req) => {
         const { error: errorActivar } = await admin.from('events').update({
           estado: 'activo',
           pack: compra.gallery_pack,
+          ...(compra.fecha_evento ? { fecha: compra.fecha_evento } : {}),
           limite_fotos: precio?.limite_fotos ?? 1500,
           vence_album: vence.toISOString().slice(0, 10),
         }).eq('id', compra.event_id).in('estado', ['borrador', 'activo']);

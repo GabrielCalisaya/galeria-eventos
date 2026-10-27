@@ -7,7 +7,7 @@ import { linkWhatsapp } from '../lib/contacto';
 import './compra-evento.css';
 
 type Compra = {
-  id: string; idempotency_key: string; event_id: string | null; titulo_evento: string; tipo_evento: string; fecha_evento: string | null;
+  id: string; idempotency_key: string; event_id: string | null; titulo_evento: string; tipo_evento: string; tipo_invitacion: 'wedding' | 'birthday' | 'xv' | null; fecha_evento: string | null;
   gallery_pack: string | null; invitation_tier: string | null; productos: Array<{ tipo: string; nombre: string; precio: number }>;
   descuento: number; total: number; moneda: string; estado: string; datos_invitacion: Record<string, string> | null; datos_completos: boolean; url_invitacion: string | null;
 };
@@ -40,6 +40,20 @@ const NOMBRES_ESTADO: Record<string, string> = {
 };
 const PAGADA = ['pagada', 'preparando', 'entregada'];
 
+function expandirDatos(datosGuardados: Record<string, string> | null): Record<string, string> {
+  const datos = { ...(datosGuardados ?? {}) };
+  try {
+    const preguntas = JSON.parse(datos.quiz_questions ?? '[]');
+    if (Array.isArray(preguntas)) preguntas.slice(0, 3).forEach((pregunta, indice) => {
+      const n = indice + 1;
+      datos[`quiz_question_${n}`] = pregunta.question ?? '';
+      for (let respuesta = 0; respuesta < 3; respuesta++) datos[`quiz_answer_${n}_${respuesta}`] = pregunta.answers?.[respuesta] ?? '';
+      datos[`quiz_correct_${n}`] = String(pregunta.correct ?? 0);
+    });
+  } catch { /* Una ficha anterior puede no tener trivia guardada. */ }
+  return datos;
+}
+
 export default function CompraEvento() {
   const { id = '' } = useParams();
   const [search, setSearch] = useSearchParams();
@@ -56,7 +70,7 @@ export default function CompraEvento() {
 
   const cargar = useCallback(async (silencioso = false) => {
     if (!silencioso) setCargando(true);
-    const { data, error: errorCompra } = await supabase.from('compras').select('id,idempotency_key,event_id,titulo_evento,tipo_evento,fecha_evento,gallery_pack,invitation_tier,productos,descuento,total,moneda,estado,datos_invitacion,datos_completos,url_invitacion').eq('id', id).maybeSingle();
+    const { data, error: errorCompra } = await supabase.from('compras').select('id,idempotency_key,event_id,titulo_evento,tipo_evento,tipo_invitacion,fecha_evento,gallery_pack,invitation_tier,productos,descuento,total,moneda,estado,datos_invitacion,datos_completos,url_invitacion').eq('id', id).maybeSingle();
     if (errorCompra || !data) {
       setErrorCarga('No encontramos este pedido en tu cuenta. Revisá que hayas iniciado sesión con el email de compra.');
       setCargando(false);
@@ -65,7 +79,7 @@ export default function CompraEvento() {
     const pedido = data as Compra;
     setErrorCarga('');
     setCompra(pedido);
-    if (!silencioso) setDatos((pedido.datos_invitacion ?? {}) as Record<string, string>);
+    if (!silencioso) setDatos(expandirDatos(pedido.datos_invitacion as Record<string, string> | null));
     const { data: pagoData } = await supabase.from('compra_pagos').select('metodo,estado,numero_transferencia,monto,moneda').eq('compra_id', id).order('created_at', { ascending: false }).limit(1).maybeSingle();
     setPago((pagoData as Pago | null) ?? null);
     setCargando(false);
@@ -94,8 +108,16 @@ export default function CompraEvento() {
   async function guardar(completar: boolean) {
     setGuardando(true); setError(''); setAviso('');
     try {
-      await invocar('guardar-datos-compra', { compra_id: id, datos, completar });
-      setAviso(completar ? '¡Listo! Recibimos la información para preparar tu invitación.' : 'Guardamos los cambios. Podés seguir completando después.');
+      const datosEnvio = { ...datos };
+      if (compra?.tipo_invitacion === 'wedding') datosEnvio.nombres = [datos.person_one, datos.person_two].filter(Boolean).join(' & ');
+      else datosEnvio.nombres = datos.person_one ?? datos.nombres ?? '';
+      if (compra?.invitation_tier === 'deluxe') datosEnvio.quiz_questions = JSON.stringify([1, 2, 3].map((n) => ({
+        question: datos[`quiz_question_${n}`] ?? '',
+        answers: [0, 1, 2].map((i) => datos[`quiz_answer_${n}_${i}`] ?? ''),
+        correct: Number(datos[`quiz_correct_${n}`] ?? 0),
+      })));
+      const respuesta = await invocar<{ aviso_preparacion?: string }>('guardar-datos-compra', { compra_id: id, datos: datosEnvio, completar });
+      setAviso(completar ? respuesta.aviso_preparacion ? `Recibimos la ficha, pero la preparación automática necesita atención: ${respuesta.aviso_preparacion}` : '¡Listo! Recibimos la información para preparar tu invitación.' : 'Guardamos los cambios. Podés seguir completando después.');
       await cargar(true);
     } catch (e) {
       setError((e as Error).message);
@@ -111,7 +133,7 @@ export default function CompraEvento() {
       const data = await invocar<{ url?: string }>('crear-compra', {
         idempotency_key: compra.idempotency_key,
         event_title: compra.titulo_evento, event_type: compra.tipo_evento, event_date: compra.fecha_evento,
-        gallery_pack: compra.gallery_pack, invitation_tier: compra.invitation_tier, payment_method: 'mercado_pago',
+        gallery_pack: compra.gallery_pack, invitation_tier: compra.invitation_tier, invitation_type: compra.tipo_invitacion, payment_method: 'mercado_pago',
         ...((compra.productos ?? []).some((p) => p.tipo === 'mejora') ? { mejora: true, event_id: compra.event_id } : {}),
       });
       irAMercadoPago(data.url);
@@ -208,7 +230,15 @@ export default function CompraEvento() {
             <div className="compra-paso"><span>✎</span><div><p className="etiqueta">Siguiente paso</p><h2>{compra.datos_completos ? 'Ficha de invitación enviada' : 'Completá los datos de tu invitación'}</h2><p>Podés guardar un borrador y volver después. Para enviarla necesitamos los datos principales.</p></div></div>
             {compra.datos_completos && <p className="compra-alerta" role="status">Ya recibimos tu ficha. Si querés corregir un dato, cambialo y volvé a enviarla.</p>}
             <form className="formulario compra-campos" onSubmit={(e) => { e.preventDefault(); void guardar(false); }}>
-              {CAMPOS.map(([key, label, placeholder, max]) => {
+              {compra.tipo_invitacion === 'wedding' ? (
+                <div className="campos-dobles">
+                  <label className="campo"><span>Nombre de la primera persona <small>Obligatorio</small></span><input maxLength={80} required value={datos.person_one ?? ''} onChange={(e) => setDatos((d) => ({ ...d, person_one: e.target.value }))} placeholder="Sofía" /></label>
+                  <label className="campo"><span>Nombre de la segunda persona <small>Obligatorio</small></span><input maxLength={80} required value={datos.person_two ?? ''} onChange={(e) => setDatos((d) => ({ ...d, person_two: e.target.value }))} placeholder="Martín" /></label>
+                </div>
+              ) : (
+                <label className="campo"><span>{compra.tipo_invitacion === 'xv' ? 'Nombre de quien cumple 15' : 'Nombre de quien cumple años'} <small>Obligatorio</small></span><input maxLength={80} required value={datos.person_one ?? datos.nombres ?? ''} onChange={(e) => setDatos((d) => ({ ...d, person_one: e.target.value, nombres: e.target.value }))} placeholder="Alma" /></label>
+              )}
+              {CAMPOS.filter(([key]) => key !== 'nombres').map(([key, label, placeholder, max]) => {
                 const obligatorio = OBLIGATORIOS.includes(key);
                 const cambiar = (valor: string) => setDatos((d) => ({ ...d, [key]: valor }));
                 return (
@@ -221,6 +251,7 @@ export default function CompraEvento() {
                 );
               })}
               <label className="campo"><span>Confirmación de asistencia</span><select value={datos.rsvp ?? ''} onChange={(e) => setDatos((d) => ({ ...d, rsvp: e.target.value }))}><option value="">Elegí una opción</option><option value="whatsapp">Por WhatsApp</option><option value="formulario">Formulario de confirmación</option><option value="sin_confirmacion">No incluir confirmación</option></select></label>
+              {compra.invitation_tier === 'deluxe' && <fieldset className="compra-quiz"><legend>Trivia de tu invitación Deluxe</legend><p>Proponé tres preguntas para que tus invitados jueguen. En cada pregunta, marcá la respuesta correcta.</p><label className="campo"><span>Título del quiz</span><input maxLength={100} value={datos.quiz_heading ?? ''} onChange={(e) => setDatos((d) => ({ ...d, quiz_heading: e.target.value }))} placeholder="¿Cuánto conocés esta celebración?" /></label>{[1, 2, 3].map((n) => <div className="compra-quiz-pregunta" key={n}><h3>Pregunta {n}</h3><label className="campo"><span>Enunciado</span><input required maxLength={160} value={datos[`quiz_question_${n}`] ?? ''} onChange={(e) => setDatos((d) => ({ ...d, [`quiz_question_${n}`]: e.target.value }))} placeholder="¿Dónde se conocieron?" /></label><div className="campos-dobles">{[0, 1, 2].map((i) => <label className="campo" key={i}><span>Respuesta {i + 1}</span><input required maxLength={80} value={datos[`quiz_answer_${n}_${i}`] ?? ''} onChange={(e) => setDatos((d) => ({ ...d, [`quiz_answer_${n}_${i}`]: e.target.value }))} placeholder={`Opción ${i + 1}`} /></label>)}</div><label className="campo"><span>Respuesta correcta</span><select value={datos[`quiz_correct_${n}`] ?? '0'} onChange={(e) => setDatos((d) => ({ ...d, [`quiz_correct_${n}`]: e.target.value }))}><option value="0">Respuesta 1</option><option value="1">Respuesta 2</option><option value="2">Respuesta 3</option></select></label></div>)}</fieldset>}
               <div className="compra-checklist"><h3>Material para preparar el diseño</h3><p>Después de enviar esta ficha, mandanos por WhatsApp:</p><ul><li>Fotos de las personas protagonistas, si querés incluirlas.</li><li>El logo, escudo o ilustraciones que quieras sumar.</li><li>Referencias visuales o aclaraciones sobre el estilo.</li></ul><a href={linkWhatsapp(`Hola, estoy enviando el material para la invitación de ${compra.titulo_evento}. Referencia: ${compra.id}.`)} target="_blank" rel="noreferrer">Enviar material por WhatsApp ↗</a></div>
               {error && <p className="error" role="alert">{error}</p>}
               {aviso && <p className="compra-alerta" role="status">{aviso}</p>}

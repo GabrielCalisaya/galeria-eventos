@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.administrar-transferencias]
 verify_jwt = false
+
+[functions.administrar-invitaciones]
+verify_jwt = false

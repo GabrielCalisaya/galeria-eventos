@@ -8,6 +8,8 @@ const SITE = (Deno.env.get('ALLOWED_ORIGIN') ?? '').replace(/\/$/, '');
 const TRANSFER_ALIAS = (Deno.env.get('TRANSFER_ALIAS') ?? '').trim();
 
 const tiposEvento = new Set(['casamiento', 'quince', 'cumpleanos', 'aniversario', 'corporativo', 'otro']);
+const tipoInvitacionDeEvento = (tipo: string): 'wedding' | 'birthday' | 'xv' | null =>
+  tipo === 'quince' ? 'xv' : tipo === 'cumpleanos' ? 'birthday' : ['casamiento', 'aniversario'].includes(tipo) ? 'wedding' : null;
 const fechaValida = (value: unknown): value is string => {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const parsed = new Date(`${value}T00:00:00.000Z`);
@@ -29,6 +31,7 @@ Deno.serve(async (req) => {
     mejora?: boolean;
     gallery_pack?: string | null;
     invitation_tier?: string | null;
+    invitation_type?: 'wedding' | 'birthday' | 'xv' | null;
     payment_method?: 'mercado_pago' | 'transferencia';
   };
   try {
@@ -55,6 +58,7 @@ Deno.serve(async (req) => {
   let title = typeof body.event_title === 'string' ? body.event_title.trim() : '';
   let eventType = body.event_type ?? '';
   let eventDate: string | null = body.event_date || null;
+  let tipoPlantilla = body.invitation_type ?? null;
   let quote: ProductoCotizado;
   let eventoExistente: string | null = null;
 
@@ -89,7 +93,11 @@ Deno.serve(async (req) => {
     };
     title = ev.titulo;
     eventType = ev.tipo;
-    eventDate = ev.fecha;
+    eventDate = body.event_date || ev.fecha;
+    if (eventDate && !fechaValida(eventDate)) return respuesta(400, { error: 'Ingresá una fecha válida.' });
+    if (conInvitacion) tipoPlantilla = tipoPlantilla ?? tipoInvitacionDeEvento(eventType);
+    if (conInvitacion && !tipoPlantilla) return respuesta(400, { error: 'Elegí el formato de invitación en el detalle del pedido antes de mejorar a Completo.' });
+    if (conInvitacion && !eventDate) return respuesta(400, { error: 'Ingresá la fecha del evento para incluir la invitación en el pack Completo.' });
     eventoExistente = ev.id;
   } else {
     if (!title || title.length > 120) return respuesta(400, { error: 'Ingresá el nombre del evento (hasta 120 caracteres).' });
@@ -99,6 +107,10 @@ Deno.serve(async (req) => {
     const cotizacion = await cotizarCompra(admin, body);
     if (typeof cotizacion === 'string') return respuesta(400, { error: cotizacion });
     quote = cotizacion;
+    if (quote.invitation_tier) {
+      if (!['wedding', 'birthday', 'xv'].includes(tipoPlantilla ?? '')) return respuesta(400, { error: 'Elegí si la invitación será para boda, cumpleaños o fiesta de 15.' });
+      if (!eventDate) return respuesta(400, { error: 'Elegí la fecha del evento para preparar la invitación.' });
+    } else tipoPlantilla = null;
 
     // Borrador existente: tiene que ser del usuario, seguir en borrador y no tener otro pedido abierto.
     if (body.event_id) {
@@ -117,7 +129,7 @@ Deno.serve(async (req) => {
   // Una repetición del mismo envío retoma la misma compra y evita crear dos eventos/pagos.
   const { data: existente } = await admin
     .from('compras')
-    .select('id,event_id,total,moneda,estado,titulo_evento,tipo_evento,fecha_evento,gallery_pack,invitation_tier')
+    .select('id,event_id,total,moneda,estado,titulo_evento,tipo_evento,tipo_invitacion,fecha_evento,gallery_pack,invitation_tier')
     .eq('user_id', sesion.userId)
     .eq('idempotency_key', body.idempotency_key)
     .maybeSingle();
@@ -125,7 +137,7 @@ Deno.serve(async (req) => {
   let eventId: string | null = null;
   if (existente) {
     if (existente.titulo_evento !== title || existente.tipo_evento !== eventType || existente.fecha_evento !== eventDate ||
-      existente.gallery_pack !== quote.gallery_pack || existente.invitation_tier !== quote.invitation_tier) {
+      existente.gallery_pack !== quote.gallery_pack || existente.invitation_tier !== quote.invitation_tier || existente.tipo_invitacion !== tipoPlantilla) {
       return respuesta(409, { error: 'Los datos del pedido cambiaron. Actualizá el checkout antes de volver a intentar.' });
     }
     const { data: pagoExistente } = await admin
@@ -197,6 +209,7 @@ Deno.serve(async (req) => {
       fecha_evento: eventDate,
       gallery_pack: quote.gallery_pack,
       invitation_tier: quote.invitation_tier,
+      tipo_invitacion: tipoPlantilla,
       productos: quote.productos,
       subtotal: quote.subtotal,
       descuento: quote.descuento,
