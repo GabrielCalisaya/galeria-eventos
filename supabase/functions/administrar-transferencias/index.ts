@@ -127,16 +127,16 @@ Deno.serve(async (req) => {
 
   const { data: avisoTomado } = await admin.from('compras').update({ email_notificado_at: ahora })
     .eq('id', compra.id).is('email_notificado_at', null).select('id').maybeSingle();
-  let emailEnviado = true;
+  let correoEnviado = false;
   if (avisoTomado) {
-    emailEnviado = await enviarAvisoTransferencia(admin, compra.id);
-    if (!emailEnviado) {
+    correoEnviado = await enviarAvisoTransferencia(admin, compra.id);
+    if (!correoEnviado) {
       await admin.from('compras').update({ email_notificado_at: null }).eq('id', compra.id).eq('email_notificado_at', ahora);
       console.error('No se pudo enviar el correo de compra confirmada', compra.id);
     }
   }
 
-  return respuesta(200, { confirmado: true, compra_id: compra.id, event_id: compra.event_id, email_enviado: emailEnviado });
+  return respuesta(200, { confirmado: true, compra_id: compra.id, event_id: compra.event_id, correo_enviado: correoEnviado });
 });
 
 async function enviarAvisoTransferencia(admin: ReturnType<typeof clienteAdmin>, compraId: string): Promise<boolean> {

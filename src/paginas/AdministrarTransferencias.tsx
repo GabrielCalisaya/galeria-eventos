@@ -71,7 +71,7 @@ export default function AdministrarTransferencias() {
                 <h2>{compra.titulo_evento}</h2>
                 <p>{compra.fecha_evento ? `${compra.fecha_evento} · ` : ''}Pedido {fecha(compra.created_at)}</p>
                 <p>Incluye: {(compra.productos ?? []).map((producto) => producto.nombre).join(' + ')}</p>
-                {pago?.numero_transferencia && <p>Número para transferir: <strong>{pago.numero_transferencia}</strong></p>}
+                {pago?.numero_transferencia && <p>Alias para transferir: <strong>{pago.numero_transferencia}</strong></p>}
                 {compra.event_id && <p>Evento: <code>{compra.event_id}</code></p>}
               </div>
               <div className="admin-transferencia-accion">

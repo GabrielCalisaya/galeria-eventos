@@ -140,7 +140,7 @@ export default function Contratar() {
             <div className="compra-paso"><span>3</span><div><h2>Elegí cómo pagar</h2><p>La transferencia queda pendiente hasta que confirmemos la acreditación.</p></div></div>
             <div className="compra-metodos">
               <label className={metodo === 'mercado_pago' ? 'seleccionada' : ''}><input type="radio" name="pago" checked={metodo === 'mercado_pago'} onChange={() => setMetodo('mercado_pago')} /><span><strong>Mercado Pago</strong><small>Pago online seguro</small></span></label>
-              <label className={metodo === 'transferencia' ? 'seleccionada' : ''}><input type="radio" name="pago" checked={metodo === 'transferencia'} onChange={() => setMetodo('transferencia')} /><span><strong>Transferencia</strong><small>Te indicamos el teléfono para transferir</small></span></label>
+              <label className={metodo === 'transferencia' ? 'seleccionada' : ''}><input type="radio" name="pago" checked={metodo === 'transferencia'} onChange={() => setMetodo('transferencia')} /><span><strong>Transferencia</strong><small>Te indicamos el alias para transferir</small></span></label>
             </div>
           </div>
         </section>

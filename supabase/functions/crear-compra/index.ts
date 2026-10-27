@@ -4,7 +4,8 @@ import { ADMIN_EMAIL, enviarCorreo, escapar, linkWhatsapp, plantilla } from '../
 
 const MP_ACCESS_TOKEN = Deno.env.get('MP_ACCESS_TOKEN') ?? '';
 const SITE = (Deno.env.get('ALLOWED_ORIGIN') ?? '').replace(/\/$/, '');
-const TRANSFER_PHONE = (Deno.env.get('TRANSFER_PHONE') ?? '').replace(/\D/g, '');
+// Alias (o CBU/CVU) donde se reciben las transferencias.
+const TRANSFER_ALIAS = (Deno.env.get('TRANSFER_ALIAS') ?? '').trim();
 
 const tiposEvento = new Set(['casamiento', 'quince', 'cumpleanos', 'aniversario', 'corporativo', 'otro']);
 const fechaValida = (value: unknown): value is string => {
@@ -35,10 +36,10 @@ Deno.serve(async (req) => {
 
   if (!SITE) return respuesta(503, { error: 'El sitio de retorno todavía no está configurado.' });
   if (body.payment_method === 'mercado_pago' && !MP_ACCESS_TOKEN) return respuesta(503, { error: 'Mercado Pago todavía no está configurado.' });
-  if (body.payment_method === 'transferencia' && !TRANSFER_PHONE) return respuesta(503, { error: 'La opción de transferencia todavía no está configurada.' });
+  if (body.payment_method === 'transferencia' && !TRANSFER_ALIAS) return respuesta(503, { error: 'La opción de transferencia todavía no está configurada.' });
   if (!['mercado_pago', 'transferencia'].includes(body.payment_method ?? '')) return respuesta(400, { error: 'Elegí un medio de pago.' });
-  if (body.payment_method === 'transferencia' && (TRANSFER_PHONE.length < 8 || TRANSFER_PHONE.length > 15)) {
-    return respuesta(503, { error: 'El número para transferencias todavía no está configurado correctamente.' });
+  if (body.payment_method === 'transferencia' && !/^([a-zA-Z0-9.-]{6,20}|\d{22})$/.test(TRANSFER_ALIAS)) {
+    return respuesta(503, { error: 'El alias para transferencias todavía no está configurado correctamente.' });
   }
 
   const admin = clienteAdmin();
@@ -88,7 +89,7 @@ Deno.serve(async (req) => {
       return respuesta(200, { order_id: existente.id, event_id: existente.event_id, total: existente.total, currency: existente.moneda, url: pagoExistente.mp_init_point });
     }
     if (pagoAbierto && pagoExistente.metodo === 'transferencia') {
-      return respuesta(200, { order_id: existente.id, event_id: existente.event_id, total: existente.total, currency: existente.moneda, payment_method: 'transferencia', status: existente.estado, transfer_phone: pagoExistente.numero_transferencia ?? TRANSFER_PHONE, whatsapp_url: linkWhatsapp(`Hola, hice la transferencia de la compra ${existente.id}.`) });
+      return respuesta(200, { order_id: existente.id, event_id: existente.event_id, total: existente.total, currency: existente.moneda, payment_method: 'transferencia', status: existente.estado, transfer_alias: pagoExistente.numero_transferencia ?? TRANSFER_ALIAS, whatsapp_url: linkWhatsapp(`Hola, hice la transferencia de la compra ${existente.id}.`) });
     }
     if (existente.estado === 'pagada' || existente.estado === 'preparando' || existente.estado === 'entregada') {
       return respuesta(409, { error: 'Esta compra ya está confirmada. Abrí el detalle del pedido para seguir.' });
@@ -163,7 +164,7 @@ Deno.serve(async (req) => {
       compra_id: compra.id,
       user_id: sesion.userId,
       metodo: body.payment_method,
-      numero_transferencia: body.payment_method === 'transferencia' ? TRANSFER_PHONE : null,
+      numero_transferencia: body.payment_method === 'transferencia' ? TRANSFER_ALIAS : null,
       monto: compra.total,
       moneda: compra.moneda,
     })
@@ -179,7 +180,7 @@ Deno.serve(async (req) => {
         return respuesta(200, { order_id: compra.id, event_id: eventId, total: compra.total, currency: compra.moneda, url: pagoEnCurso.mp_init_point });
       }
       if (pagoEnCurso?.metodo === 'transferencia') {
-        return respuesta(200, { order_id: compra.id, event_id: eventId, total: compra.total, currency: compra.moneda, payment_method: 'transferencia', status: compra.estado, transfer_phone: pagoEnCurso.numero_transferencia ?? TRANSFER_PHONE, whatsapp_url: linkWhatsapp(`Hola, hice la transferencia de la compra ${compra.id}.`) });
+        return respuesta(200, { order_id: compra.id, event_id: eventId, total: compra.total, currency: compra.moneda, payment_method: 'transferencia', status: compra.estado, transfer_alias: pagoEnCurso.numero_transferencia ?? TRANSFER_ALIAS, whatsapp_url: linkWhatsapp(`Hola, hice la transferencia de la compra ${compra.id}.`) });
       }
       return respuesta(409, { error: 'Estamos preparando el medio de pago de tu pedido. Esperá unos segundos y volvé a intentar.' });
     }
@@ -201,9 +202,9 @@ Deno.serve(async (req) => {
     ].filter(Boolean).join('');
     const cuerpo = `<p>Registramos tu pedido para <strong>${escapar(title)}</strong>. La transferencia queda pendiente hasta que confirmemos la acreditación.</p>
       <p><strong>Total:</strong> ${new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(Number(compra.total))}<br>
-      <strong>Número para transferir:</strong> ${escapar(TRANSFER_PHONE)}<br><strong>Referencia:</strong> ${escapar(compra.id)}</p>
+      <strong>Alias para transferir:</strong> ${escapar(TRANSFER_ALIAS)}<br><strong>Referencia:</strong> ${escapar(compra.id)}</p>
       <p><strong>Incluye:</strong></p><ul>${listaProductos}</ul>
-      <p>Cuando transfieras, avisá por WhatsApp con esta referencia. No hace falta enviar alias.</p>
+      <p>Cuando transfieras, avisá por WhatsApp con esta referencia.</p>
       <p><strong>Para avanzar con tu pedido, completá la ficha y prepará esta información:</strong></p><ul>${listaDatos}</ul>
       <p>También podés adjuntar fotos, música, logo/escudo o referencias desde WhatsApp si el formulario no acepta esos archivos.</p>
       <p>El pedido se activa cuando confirmemos la transferencia. Después podés revisar o completar los datos desde el detalle de compra.</p>`;
@@ -217,7 +218,7 @@ Deno.serve(async (req) => {
       currency: compra.moneda,
       payment_method: 'transferencia',
       status: 'transferencia_pendiente',
-      transfer_phone: TRANSFER_PHONE,
+      transfer_alias: TRANSFER_ALIAS,
       whatsapp_url: contacto,
     });
   }
