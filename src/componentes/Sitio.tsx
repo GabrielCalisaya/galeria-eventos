@@ -179,7 +179,7 @@ export function PieSitio({ compacto = false, oscuro = false }: { compacto?: bool
             © {anio} {NEGOCIO.nombre} · {NEGOCIO.titular} · CUIT {NEGOCIO.cuit}
           </p>
           <p className="pie-pagos">
-            <span aria-hidden="true">🔒</span> Pagos procesados de forma segura por Mercado Pago
+            <span aria-hidden="true">🔒</span> Pagás con Mercado Pago o por transferencia bancaria
           </p>
         </div>
       </div>

@@ -30,9 +30,8 @@ export default function Entrar() {
   const navegar = useNavigate();
   const [params] = useSearchParams();
   const solicitado = params.get('next') ?? '';
-  const destino = solicitado === '/contratar' || solicitado.startsWith('/contratar?') || /^\/panel\/compra\/[0-9a-f-]{36}(?:\?.*)?$/i.test(solicitado)
-    ? solicitado
-    : '/panel';
+  // Solo rutas internas conocidas (nunca otro sitio): el checkout o cualquier página del panel.
+  const destino = /^\/(contratar|panel(\/[\w-]+)*)(\?[^#]*)?$/.test(solicitado) ? solicitado : '/panel';
   const [modo, setModo] = useState<Modo>(params.get('modo') === 'entrar' ? 'entrar' : 'crear');
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');

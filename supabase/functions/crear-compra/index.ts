@@ -223,7 +223,7 @@ Deno.serve(async (req) => {
       <p>El pedido se activa cuando confirmemos la transferencia. Después podés revisar o completar los datos desde el detalle de compra.</p>`;
     if (email) await enviarCorreo(email, `Transferencia pendiente · ${title}`, plantilla('Tu pedido quedó pendiente de transferencia', cuerpo, { texto: 'Avisar por WhatsApp', url: contacto }, undefined, 'Invitaciones Digitales · by NewTech'));
     if (ADMIN_EMAIL) await enviarCorreo(ADMIN_EMAIL, `Transferencia pendiente · ${title}`, plantilla('Nueva compra pendiente de transferencia',
-      `<p><strong>Evento:</strong> ${escapar(title)}${evento?.fecha ? ` · ${escapar(evento.fecha)}` : ''}<br><strong>Cliente:</strong> ${escapar(email)}<br><strong>Total:</strong> ${new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(Number(compra.total))}<br><strong>Referencia:</strong> ${escapar(compra.id)}<br><strong>Productos:</strong> ${listaProductos}</p>`, undefined, undefined, 'Invitaciones Digitales · by NewTech'));
+      `<p><strong>Evento:</strong> ${escapar(title)}${evento?.fecha ? ` · ${escapar(evento.fecha)}` : ''}<br><strong>Cliente:</strong> ${escapar(email)}<br><strong>Total:</strong> ${new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(Number(compra.total))}<br><strong>Referencia:</strong> ${escapar(compra.id)}<br><strong>Productos:</strong> ${listaProductos}</p>`, { texto: 'Confirmar transferencias', url: `${SITE}/panel/administracion` }, undefined, 'Invitaciones Digitales · by NewTech'));
     return respuesta(200, {
       order_id: compra.id,
       event_id: eventId,

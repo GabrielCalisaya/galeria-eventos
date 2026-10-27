@@ -1,4 +1,17 @@
+// Guarda la ficha del evento que completa el cliente después de comprar.
+// Con `completar: true` exige los datos principales y le avisa a NewTech por correo con toda la ficha.
+
 import { clienteAdmin, cors, respuesta, usuarioDelPedido } from '../_shared/comun.ts';
+import { ADMIN_EMAIL, enviarCorreo, escapar, plantilla } from '../_shared/correo.ts';
+
+const SITIO = (Deno.env.get('ALLOWED_ORIGIN') ?? '').replace(/\/$/, '');
+
+const ETIQUETAS: Record<string, string> = {
+  nombres: 'Nombres', hora: 'Horario', lugar: 'Lugar', direccion: 'Dirección', mapa: 'Mapa', frase: 'Frase',
+  cronograma: 'Cronograma', vestimenta: 'Vestimenta', regalos: 'Regalos', alias_regalo: 'Alias para regalos',
+  titular_regalo: 'Titular', rsvp: 'Confirmación de asistencia', whatsapp: 'WhatsApp', colores: 'Colores o estilo',
+  galeria_bienvenida: 'Bienvenida de la galería', notas: 'Notas', preguntas_trivia: 'Preguntas de trivia',
+};
 
 const limites: Record<string, number> = {
   nombres: 160,
@@ -42,6 +55,9 @@ Deno.serve(async (req) => {
     .eq('id', body.compra_id)
     .maybeSingle();
   if (!compra || compra.user_id !== sesion.userId) return respuesta(404, { error: 'No encontramos esa compra.' });
+  if (compra.estado === 'preparando' || compra.estado === 'entregada') {
+    return respuesta(409, { error: 'Ya estamos trabajando con tu ficha. Para cambiar algún dato escribinos por WhatsApp.' });
+  }
   if (!['pagada', 'transferencia_pendiente'].includes(compra.estado)) {
     return respuesta(409, { error: 'Completá esta ficha cuando el pago esté confirmado o la transferencia quede pendiente.' });
   }
@@ -77,5 +93,22 @@ Deno.serve(async (req) => {
     updated_at: new Date().toISOString(),
   }).eq('id', compra.id).eq('user_id', sesion.userId);
   if (error) return respuesta(500, { error: 'No se pudieron guardar los datos. Intentá de nuevo.' });
+
+  if (body.completar && compra.invitation_tier && ADMIN_EMAIL) {
+    const { data: usuario } = await admin.auth.admin.getUserById(sesion.userId);
+    const filas = Object.entries(datos)
+      .map(([k, v]) => `<tr><td style="padding:4px 10px 4px 0;vertical-align:top;color:#73656a">${escapar(ETIQUETAS[k] ?? k)}</td><td style="padding:4px 0;white-space:pre-wrap">${escapar(v)}</td></tr>`)
+      .join('');
+    const enviado = await enviarCorreo(ADMIN_EMAIL, `Ficha de invitación · ${compra.titulo_evento}`, plantilla(
+      'Ficha de invitación recibida',
+      `<p><strong>Evento:</strong> ${escapar(compra.titulo_evento)}<br><strong>Nivel:</strong> ${escapar(compra.invitation_tier)}<br>
+       <strong>Cliente:</strong> ${escapar(usuario?.user?.email ?? '-')}<br><strong>Estado del pago:</strong> ${escapar(compra.estado)}<br>
+       <strong>Referencia:</strong> ${escapar(compra.id)}</p><table style="border-collapse:collapse;font-size:14px">${filas}</table>`,
+      { texto: 'Ver pedidos', url: `${SITIO}/panel/administracion` },
+      undefined,
+      'Invitaciones Digitales · by NewTech',
+    ));
+    if (!enviado) console.error('No se pudo avisar la ficha completa', compra.id);
+  }
   return respuesta(200, { guardado: true, completo: Boolean(body.completar) });
 });

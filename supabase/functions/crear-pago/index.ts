@@ -1,4 +1,5 @@
-// Crea un pago en Mercado Pago (Checkout Pro) para activar un evento.
+// Crea un pago en Mercado Pago (Checkout Pro) para mejorar el pack de una galería ya activa (se paga la diferencia).
+// Las galerías nuevas o en borrador se activan con el checkout unificado (crear-compra).
 // El precio sale de la tabla precios_pack: el navegador solo elige el pack.
 
 import { clienteAdmin, cors, respuesta, usuarioDelPedido } from '../_shared/comun.ts';
@@ -36,19 +37,16 @@ Deno.serve(async (req) => {
   const precio = precios?.find((p) => p.pack === pack && p.activo);
   if (!precio) return respuesta(400, { error: 'Ese pack no está disponible' });
 
-  // Evento sin pagar: precio completo. Evento activo: se paga la diferencia para mejorar el pack.
-  let monto = Number(precio.precio);
-  let esMejora = false;
-  if (evento.estado === 'activo') {
-    const actual = precios?.find((p) => p.pack === evento.pack);
-    if (!actual || precio.orden <= actual.orden) {
-      return respuesta(409, { error: 'El evento ya tiene ese pack o uno mejor' });
-    }
-    monto = Math.max(1, Number(precio.precio) - Number(actual.precio));
-    esMejora = true;
-  } else if (evento.estado !== 'borrador') {
-    return respuesta(409, { error: 'Este evento ya no se puede pagar' });
+  // Solo mejoras de una galería activa: se paga la diferencia con el pack actual.
+  if (evento.estado === 'borrador') {
+    return respuesta(409, { error: 'Activá esta galería desde «Elegir pack y pagar» en el panel del evento.' });
   }
+  if (evento.estado !== 'activo') return respuesta(409, { error: 'Este evento ya no se puede pagar' });
+  const actual = precios?.find((p) => p.pack === evento.pack);
+  if (!actual || precio.orden <= actual.orden) {
+    return respuesta(409, { error: 'El evento ya tiene ese pack o uno mejor' });
+  }
+  const monto = Math.max(1, Number(precio.precio) - Number(actual.precio));
 
   const { data: usuario } = await admin.auth.admin.getUserById(sesion.userId);
 
@@ -71,7 +69,7 @@ Deno.serve(async (req) => {
     items: [
       {
         id: `pack-${precio.pack}`,
-        title: `Galería en vivo · ${esMejora ? 'Mejora a pack' : 'Pack'} ${precio.nombre} · ${evento.titulo}`.slice(0, 250),
+        title: `Galería en vivo · Mejora a pack ${precio.nombre} · ${evento.titulo}`.slice(0, 250),
         quantity: 1,
         unit_price: monto,
         currency_id: precio.moneda,

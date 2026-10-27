@@ -35,7 +35,7 @@ export default function PanelEvento() {
   const retornoPago = params.get('pago');
   const [recienPagado, setRecienPagado] = useState(false);
   // Pedido del checkout unificado que creó este evento (si lo hay).
-  const [pedido, setPedido] = useState<{ id: string; estado: string } | null>(null);
+  const [pedido, setPedido] = useState<{ id: string; estado: string; invitation_tier: string | null; datos_completos: boolean } | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -47,12 +47,12 @@ export default function PanelEvento() {
       .then(({ data }) => setEvento((data as Evento | null) ?? null));
     supabase
       .from('compras')
-      .select('id,estado')
+      .select('id,estado,invitation_tier,datos_completos')
       .eq('event_id', id)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle()
-      .then(({ data }) => setPedido((data as { id: string; estado: string } | null) ?? null));
+      .then(({ data }) => setPedido((data as typeof pedido) ?? null));
   }, [id]);
 
   // Al volver de Mercado Pago, se espera la confirmación del pago (llega por aviso del servidor).
@@ -270,7 +270,7 @@ export default function PanelEvento() {
           )
         ) : (
           <>
-        <ProximosPasos evento={evento} recienPagado={recienPagado} />
+        <ProximosPasos evento={evento} recienPagado={recienPagado} pedido={pedido} />
         <section className="tarjeta bloque-qr">
           <div className="qr-marco">{qr ? <img src={qr} alt="Código QR para los invitados" className="qr" /> : <div className="qr" />}</div>
           <div className="bloque-qr-texto">
@@ -321,7 +321,7 @@ export default function PanelEvento() {
           </section>
         </div>
         ) : (
-          <ElegirPack evento={evento} modo="mejorar" estadoRetorno={retornoPago} />
+          <ElegirPack evento={evento} estadoRetorno={retornoPago} />
         )}
 
           </>
