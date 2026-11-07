@@ -13,9 +13,9 @@ export default function TriviaPantalla({ estado, titulo }: { estado: EstadoTrivi
       <div className="tv-trivia">
         <p className="etiqueta-clara">✦ Trivia de {titulo} ✦</p>
         <h1 className="tv-titulo">{fase === 'fin' ? '¡Tenemos ganadores!' : 'Así va el ranking'}</h1>
-        <ol className="tv-ranking">
-          {(ranking ?? []).slice(0, 5).map((r, i) => (
-            <li key={`${r.nombre}-${i}`} className={i === 0 ? 'primero' : ''} style={{ animationDelay: `${(4 - i) * 180}ms` }}>
+        <ol className={(ranking ?? []).length > 5 ? 'tv-ranking diez' : 'tv-ranking'}>
+          {(ranking ?? []).slice(0, 10).map((r, i, lista) => (
+            <li key={`${r.nombre}-${i}`} className={i === 0 ? 'primero' : ''} style={{ animationDelay: `${(lista.length - 1 - i) * 150}ms` }}>
               <span className="tv-ranking-pos">{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}</span>
               <span className="tv-ranking-nombre">{r.nombre}</span>
               <span className="tv-ranking-puntos">{r.puntos.toLocaleString('es-AR')}</span>
@@ -23,6 +23,11 @@ export default function TriviaPantalla({ estado, titulo }: { estado: EstadoTrivi
           ))}
         </ol>
         {(ranking ?? []).length === 0 && <p className="tv-sub">Todavía nadie sumó puntos.</p>}
+        {(estado.jugadores ?? 0) > 0 && (
+          <p className="tv-sub">
+            {estado.jugadores === 1 ? 'Participó 1 invitado' : `Participaron ${estado.jugadores} invitados`} · ¡gracias por jugar!
+          </p>
+        )}
       </div>
     );
   }

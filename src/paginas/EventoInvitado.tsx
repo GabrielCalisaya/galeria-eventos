@@ -163,10 +163,10 @@ function PedirNombre({ slug, evento, onListo }: { slug: string; evento: EventoPu
           id="nombre"
           required
           maxLength={60}
-          autoComplete="given-name"
+          autoComplete="name"
           value={nombre}
           onChange={(e) => setNombre(e.target.value)}
-          placeholder="Tu nombre"
+          placeholder="Nombre y apellido"
         />
         <p className="nombre-ayuda">Así los anfitriones saben quién sacó cada foto. No hace falta descargar nada.</p>
         {error && <p className="error" role="alert">{error}</p>}

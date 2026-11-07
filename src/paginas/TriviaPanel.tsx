@@ -390,15 +390,39 @@ function ControlEnVivo({ eventId, cantidad }: { eventId: string; cantidad: numbe
   }, [estado?.fase, restante, clave, accion]);
 
   async function terminar() {
-    if (estado?.fase !== 'fin') {
+    const ok = await confirmar(
+      estado?.fase === 'fin'
+        ? {
+            titulo: 'Volver a la galería',
+            mensaje: <p>El ranking deja de verse en la pantalla y en los celulares. Si vas a entregar premios, anotá o sacale una captura a los ganadores antes.</p>,
+            aceptar: 'Volver a la galería',
+          }
+        : {
+            titulo: 'Terminar la trivia',
+            mensaje: <p>Los invitados vuelven a la galería. Si la empezás de nuevo, los puntajes arrancan de cero.</p>,
+            aceptar: 'Terminar',
+          },
+    );
+    if (!ok) return;
+    await accion('terminar');
+  }
+
+  async function empezar() {
+    const jugaron = estado?.jugadores ?? 0;
+    if (jugaron > 0) {
       const ok = await confirmar({
-        titulo: 'Terminar la trivia',
-        mensaje: <p>Los invitados vuelven a la galería. Si la empezás de nuevo, los puntajes arrancan de cero.</p>,
-        aceptar: 'Terminar',
+        titulo: 'Empezar de nuevo',
+        mensaje: (
+          <p>
+            Ya jugaron <strong>{jugaron} {jugaron === 1 ? 'invitado' : 'invitados'}</strong>. Si empezás otra vez, se borran todos los puntajes y el ranking anterior. No se puede deshacer.
+          </p>
+        ),
+        aceptar: 'Empezar de cero',
+        peligro: true,
       });
       if (!ok) return;
     }
-    await accion('terminar');
+    await accion('iniciar');
   }
 
   const fase = estado?.fase ?? 'espera';
@@ -446,7 +470,7 @@ function ControlEnVivo({ eventId, cantidad }: { eventId: string; cantidad: numbe
               type="button"
               className="boton boton-primario boton-grande"
               disabled={enviando || cantidad === 0}
-              onClick={() => accion('iniciar')}
+              onClick={() => void empezar()}
             >
               ▶ Empezar trivia
             </button>
@@ -511,7 +535,10 @@ function ControlEnVivo({ eventId, cantidad }: { eventId: string; cantidad: numbe
 function RankingCorto({ estado }: { estado: ReturnType<typeof useTrivia>['estado'] }) {
   const ranking = estado?.ranking ?? [];
   if (ranking.length === 0) return <p className="ayuda">Todavía nadie sumó puntos.</p>;
+  const jugaron = estado?.jugadores ?? 0;
   return (
+    <>
+    {jugaron > 0 && <p className="ayuda">{jugaron === 1 ? 'Participó 1 invitado' : `Participaron ${jugaron} invitados`}</p>}
     <ol className="ranking-panel">
       {ranking.map((r, i) => (
         <li key={`${r.nombre}-${i}`} className={i < 3 ? `podio podio-${i + 1}` : ''}>
@@ -521,5 +548,6 @@ function RankingCorto({ estado }: { estado: ReturnType<typeof useTrivia>['estado
         </li>
       ))}
     </ol>
+    </>
   );
 }
