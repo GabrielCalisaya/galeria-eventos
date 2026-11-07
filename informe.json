@@ -1,0 +1,1052 @@
+[
+  {
+    "pagina": "inicio",
+    "vista": "cel-chico",
+    "ancho": 360,
+    "scrollWidth": 360,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "demo",
+    "vista": "cel-chico",
+    "ancho": 360,
+    "scrollWidth": 360,
+    "fuera": [
+      "span.portada-anillos (184→414)"
+    ],
+    "errores": []
+  },
+  {
+    "pagina": "demo-pantalla",
+    "vista": "cel-chico",
+    "ancho": 360,
+    "scrollWidth": 360,
+    "fuera": [
+      "div.pantalla-fondo (-40→400)"
+    ],
+    "errores": []
+  },
+  {
+    "pagina": "entrar",
+    "vista": "cel-chico",
+    "ancho": 360,
+    "scrollWidth": 360,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "contratar",
+    "vista": "cel-chico",
+    "ancho": 360,
+    "scrollWidth": 360,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "terminos",
+    "vista": "cel-chico",
+    "ancho": 360,
+    "scrollWidth": 360,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "invitado-nombre",
+    "vista": "cel-chico",
+    "ancho": 360,
+    "scrollWidth": 360,
+    "fuera": [
+      "span.portada-anillos (184→414)"
+    ],
+    "errores": []
+  },
+  {
+    "pagina": "invitado-galeria",
+    "vista": "cel-chico",
+    "ancho": 360,
+    "scrollWidth": 360,
+    "fuera": [
+      "span.portada-anillos (184→414)"
+    ],
+    "errores": []
+  },
+  {
+    "pagina": "invitado-galeria-noche",
+    "vista": "cel-chico",
+    "ancho": 360,
+    "scrollWidth": 360,
+    "fuera": [
+      "span.portada-anillos (184→414)"
+    ],
+    "errores": []
+  },
+  {
+    "pagina": "invitado-trivia-pregunta",
+    "vista": "cel-chico",
+    "ancho": 360,
+    "scrollWidth": 360,
+    "fuera": [
+      "span.portada-anillos (184→414)"
+    ],
+    "errores": []
+  },
+  {
+    "pagina": "invitado-trivia-resultado",
+    "vista": "cel-chico",
+    "ancho": 360,
+    "scrollWidth": 360,
+    "fuera": [
+      "span.portada-anillos (184→414)"
+    ],
+    "errores": []
+  },
+  {
+    "pagina": "invitado-trivia-fin",
+    "vista": "cel-chico",
+    "ancho": 360,
+    "scrollWidth": 360,
+    "fuera": [
+      "span.portada-anillos (184→414)"
+    ],
+    "errores": []
+  },
+  {
+    "pagina": "pantalla-bienvenida",
+    "vista": "cel-chico",
+    "ancho": 360,
+    "scrollWidth": 360,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "pantalla-fotos",
+    "vista": "cel-chico",
+    "ancho": 360,
+    "scrollWidth": 360,
+    "fuera": [
+      "div.pantalla-fondo (-40→400)"
+    ],
+    "errores": []
+  },
+  {
+    "pagina": "pantalla-trivia-pregunta",
+    "vista": "cel-chico",
+    "ancho": 360,
+    "scrollWidth": 360,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "pantalla-trivia-resultado",
+    "vista": "cel-chico",
+    "ancho": 360,
+    "scrollWidth": 360,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "pantalla-trivia-fin",
+    "vista": "cel-chico",
+    "ancho": 360,
+    "scrollWidth": 360,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "panel-eventos",
+    "vista": "cel-chico",
+    "ancho": 360,
+    "scrollWidth": 360,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "panel-evento",
+    "vista": "cel-chico",
+    "ancho": 360,
+    "scrollWidth": 360,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "panel-trivia",
+    "vista": "cel-chico",
+    "ancho": 360,
+    "scrollWidth": 360,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "panel-trivia-envivo",
+    "vista": "cel-chico",
+    "ancho": 360,
+    "scrollWidth": 360,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "panel-trivia-resultado",
+    "vista": "cel-chico",
+    "ancho": 360,
+    "scrollWidth": 360,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "panel-trivia-fin",
+    "vista": "cel-chico",
+    "ancho": 360,
+    "scrollWidth": 360,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "panel-tarjetas",
+    "vista": "cel-chico",
+    "ancho": 360,
+    "scrollWidth": 360,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "inicio",
+    "vista": "cel",
+    "ancho": 390,
+    "scrollWidth": 390,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "demo",
+    "vista": "cel",
+    "ancho": 390,
+    "scrollWidth": 390,
+    "fuera": [
+      "span.portada-anillos (214→444)"
+    ],
+    "errores": []
+  },
+  {
+    "pagina": "demo-pantalla",
+    "vista": "cel",
+    "ancho": 390,
+    "scrollWidth": 390,
+    "fuera": [
+      "div.pantalla-fondo (-40→430)"
+    ],
+    "errores": []
+  },
+  {
+    "pagina": "entrar",
+    "vista": "cel",
+    "ancho": 390,
+    "scrollWidth": 390,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "contratar",
+    "vista": "cel",
+    "ancho": 390,
+    "scrollWidth": 390,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "terminos",
+    "vista": "cel",
+    "ancho": 390,
+    "scrollWidth": 390,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "invitado-nombre",
+    "vista": "cel",
+    "ancho": 390,
+    "scrollWidth": 390,
+    "fuera": [
+      "span.portada-anillos (214→444)"
+    ],
+    "errores": []
+  },
+  {
+    "pagina": "invitado-galeria",
+    "vista": "cel",
+    "ancho": 390,
+    "scrollWidth": 390,
+    "fuera": [
+      "span.portada-anillos (214→444)"
+    ],
+    "errores": []
+  },
+  {
+    "pagina": "invitado-galeria-noche",
+    "vista": "cel",
+    "ancho": 390,
+    "scrollWidth": 390,
+    "fuera": [
+      "span.portada-anillos (214→444)"
+    ],
+    "errores": []
+  },
+  {
+    "pagina": "invitado-trivia-pregunta",
+    "vista": "cel",
+    "ancho": 390,
+    "scrollWidth": 390,
+    "fuera": [
+      "span.portada-anillos (214→444)"
+    ],
+    "errores": []
+  },
+  {
+    "pagina": "invitado-trivia-resultado",
+    "vista": "cel",
+    "ancho": 390,
+    "scrollWidth": 390,
+    "fuera": [
+      "span.portada-anillos (214→444)"
+    ],
+    "errores": []
+  },
+  {
+    "pagina": "invitado-trivia-fin",
+    "vista": "cel",
+    "ancho": 390,
+    "scrollWidth": 390,
+    "fuera": [
+      "span.portada-anillos (214→444)"
+    ],
+    "errores": []
+  },
+  {
+    "pagina": "pantalla-bienvenida",
+    "vista": "cel",
+    "ancho": 390,
+    "scrollWidth": 390,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "pantalla-fotos",
+    "vista": "cel",
+    "ancho": 390,
+    "scrollWidth": 390,
+    "fuera": [
+      "div.pantalla-fondo (-40→430)"
+    ],
+    "errores": []
+  },
+  {
+    "pagina": "pantalla-trivia-pregunta",
+    "vista": "cel",
+    "ancho": 390,
+    "scrollWidth": 390,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "pantalla-trivia-resultado",
+    "vista": "cel",
+    "ancho": 390,
+    "scrollWidth": 390,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "pantalla-trivia-fin",
+    "vista": "cel",
+    "ancho": 390,
+    "scrollWidth": 390,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "panel-eventos",
+    "vista": "cel",
+    "ancho": 390,
+    "scrollWidth": 390,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "panel-evento",
+    "vista": "cel",
+    "ancho": 390,
+    "scrollWidth": 390,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "panel-trivia",
+    "vista": "cel",
+    "ancho": 390,
+    "scrollWidth": 390,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "panel-trivia-envivo",
+    "vista": "cel",
+    "ancho": 390,
+    "scrollWidth": 390,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "panel-trivia-resultado",
+    "vista": "cel",
+    "ancho": 390,
+    "scrollWidth": 390,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "panel-trivia-fin",
+    "vista": "cel",
+    "ancho": 390,
+    "scrollWidth": 390,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "panel-tarjetas",
+    "vista": "cel",
+    "ancho": 390,
+    "scrollWidth": 390,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "inicio",
+    "vista": "cel-horizontal",
+    "ancho": 844,
+    "scrollWidth": 844,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "demo",
+    "vista": "cel-horizontal",
+    "ancho": 844,
+    "scrollWidth": 844,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "demo-pantalla",
+    "vista": "cel-horizontal",
+    "ancho": 844,
+    "scrollWidth": 844,
+    "fuera": [
+      "div.pantalla-fondo (-40→884)"
+    ],
+    "errores": []
+  },
+  {
+    "pagina": "entrar",
+    "vista": "cel-horizontal",
+    "ancho": 844,
+    "scrollWidth": 844,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "contratar",
+    "vista": "cel-horizontal",
+    "ancho": 844,
+    "scrollWidth": 844,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "terminos",
+    "vista": "cel-horizontal",
+    "ancho": 844,
+    "scrollWidth": 844,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "invitado-nombre",
+    "vista": "cel-horizontal",
+    "ancho": 844,
+    "scrollWidth": 844,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "invitado-galeria",
+    "vista": "cel-horizontal",
+    "ancho": 844,
+    "scrollWidth": 844,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "invitado-galeria-noche",
+    "vista": "cel-horizontal",
+    "ancho": 844,
+    "scrollWidth": 844,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "invitado-trivia-pregunta",
+    "vista": "cel-horizontal",
+    "ancho": 844,
+    "scrollWidth": 844,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "invitado-trivia-resultado",
+    "vista": "cel-horizontal",
+    "ancho": 844,
+    "scrollWidth": 844,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "invitado-trivia-fin",
+    "vista": "cel-horizontal",
+    "ancho": 844,
+    "scrollWidth": 844,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "pantalla-bienvenida",
+    "vista": "cel-horizontal",
+    "ancho": 844,
+    "scrollWidth": 844,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "pantalla-fotos",
+    "vista": "cel-horizontal",
+    "ancho": 844,
+    "scrollWidth": 844,
+    "fuera": [
+      "div.pantalla-fondo (-40→884)"
+    ],
+    "errores": []
+  },
+  {
+    "pagina": "pantalla-trivia-pregunta",
+    "vista": "cel-horizontal",
+    "ancho": 844,
+    "scrollWidth": 844,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "pantalla-trivia-resultado",
+    "vista": "cel-horizontal",
+    "ancho": 844,
+    "scrollWidth": 844,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "pantalla-trivia-fin",
+    "vista": "cel-horizontal",
+    "ancho": 844,
+    "scrollWidth": 844,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "panel-eventos",
+    "vista": "cel-horizontal",
+    "ancho": 844,
+    "scrollWidth": 844,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "panel-evento",
+    "vista": "cel-horizontal",
+    "ancho": 844,
+    "scrollWidth": 844,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "panel-trivia",
+    "vista": "cel-horizontal",
+    "ancho": 844,
+    "scrollWidth": 844,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "panel-trivia-envivo",
+    "vista": "cel-horizontal",
+    "ancho": 844,
+    "scrollWidth": 844,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "panel-trivia-resultado",
+    "vista": "cel-horizontal",
+    "ancho": 844,
+    "scrollWidth": 844,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "panel-trivia-fin",
+    "vista": "cel-horizontal",
+    "ancho": 844,
+    "scrollWidth": 844,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "panel-tarjetas",
+    "vista": "cel-horizontal",
+    "ancho": 844,
+    "scrollWidth": 844,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "inicio",
+    "vista": "tablet",
+    "ancho": 768,
+    "scrollWidth": 768,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "demo",
+    "vista": "tablet",
+    "ancho": 768,
+    "scrollWidth": 768,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "demo-pantalla",
+    "vista": "tablet",
+    "ancho": 768,
+    "scrollWidth": 768,
+    "fuera": [
+      "div.pantalla-fondo (-40→808)"
+    ],
+    "errores": []
+  },
+  {
+    "pagina": "entrar",
+    "vista": "tablet",
+    "ancho": 768,
+    "scrollWidth": 768,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "contratar",
+    "vista": "tablet",
+    "ancho": 768,
+    "scrollWidth": 768,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "terminos",
+    "vista": "tablet",
+    "ancho": 768,
+    "scrollWidth": 768,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "invitado-nombre",
+    "vista": "tablet",
+    "ancho": 768,
+    "scrollWidth": 768,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "invitado-galeria",
+    "vista": "tablet",
+    "ancho": 768,
+    "scrollWidth": 768,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "invitado-galeria-noche",
+    "vista": "tablet",
+    "ancho": 768,
+    "scrollWidth": 768,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "invitado-trivia-pregunta",
+    "vista": "tablet",
+    "ancho": 768,
+    "scrollWidth": 768,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "invitado-trivia-resultado",
+    "vista": "tablet",
+    "ancho": 768,
+    "scrollWidth": 768,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "invitado-trivia-fin",
+    "vista": "tablet",
+    "ancho": 768,
+    "scrollWidth": 768,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "pantalla-bienvenida",
+    "vista": "tablet",
+    "ancho": 768,
+    "scrollWidth": 768,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "pantalla-fotos",
+    "vista": "tablet",
+    "ancho": 768,
+    "scrollWidth": 768,
+    "fuera": [
+      "div.pantalla-fondo (-40→808)"
+    ],
+    "errores": []
+  },
+  {
+    "pagina": "pantalla-trivia-pregunta",
+    "vista": "tablet",
+    "ancho": 768,
+    "scrollWidth": 768,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "pantalla-trivia-resultado",
+    "vista": "tablet",
+    "ancho": 768,
+    "scrollWidth": 768,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "pantalla-trivia-fin",
+    "vista": "tablet",
+    "ancho": 768,
+    "scrollWidth": 768,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "panel-eventos",
+    "vista": "tablet",
+    "ancho": 768,
+    "scrollWidth": 768,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "panel-evento",
+    "vista": "tablet",
+    "ancho": 768,
+    "scrollWidth": 768,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "panel-trivia",
+    "vista": "tablet",
+    "ancho": 768,
+    "scrollWidth": 768,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "panel-trivia-envivo",
+    "vista": "tablet",
+    "ancho": 768,
+    "scrollWidth": 768,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "panel-trivia-resultado",
+    "vista": "tablet",
+    "ancho": 768,
+    "scrollWidth": 768,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "panel-trivia-fin",
+    "vista": "tablet",
+    "ancho": 768,
+    "scrollWidth": 768,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "panel-tarjetas",
+    "vista": "tablet",
+    "ancho": 768,
+    "scrollWidth": 768,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "inicio",
+    "vista": "compu",
+    "ancho": 1366,
+    "scrollWidth": 1366,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "demo",
+    "vista": "compu",
+    "ancho": 1366,
+    "scrollWidth": 1366,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "demo-pantalla",
+    "vista": "compu",
+    "ancho": 1366,
+    "scrollWidth": 1366,
+    "fuera": [
+      "div.pantalla-fondo (-40→1406)"
+    ],
+    "errores": []
+  },
+  {
+    "pagina": "entrar",
+    "vista": "compu",
+    "ancho": 1366,
+    "scrollWidth": 1366,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "contratar",
+    "vista": "compu",
+    "ancho": 1366,
+    "scrollWidth": 1366,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "terminos",
+    "vista": "compu",
+    "ancho": 1366,
+    "scrollWidth": 1366,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "invitado-nombre",
+    "vista": "compu",
+    "ancho": 1366,
+    "scrollWidth": 1366,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "invitado-galeria",
+    "vista": "compu",
+    "ancho": 1366,
+    "scrollWidth": 1366,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "invitado-galeria-noche",
+    "vista": "compu",
+    "ancho": 1366,
+    "scrollWidth": 1366,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "invitado-trivia-pregunta",
+    "vista": "compu",
+    "ancho": 1366,
+    "scrollWidth": 1366,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "invitado-trivia-resultado",
+    "vista": "compu",
+    "ancho": 1366,
+    "scrollWidth": 1366,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "invitado-trivia-fin",
+    "vista": "compu",
+    "ancho": 1366,
+    "scrollWidth": 1366,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "pantalla-bienvenida",
+    "vista": "compu",
+    "ancho": 1366,
+    "scrollWidth": 1366,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "pantalla-fotos",
+    "vista": "compu",
+    "ancho": 1366,
+    "scrollWidth": 1366,
+    "fuera": [
+      "div.pantalla-fondo (-40→1406)"
+    ],
+    "errores": []
+  },
+  {
+    "pagina": "pantalla-trivia-pregunta",
+    "vista": "compu",
+    "ancho": 1366,
+    "scrollWidth": 1366,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "pantalla-trivia-resultado",
+    "vista": "compu",
+    "ancho": 1366,
+    "scrollWidth": 1366,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "pantalla-trivia-fin",
+    "vista": "compu",
+    "ancho": 1366,
+    "scrollWidth": 1366,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "panel-eventos",
+    "vista": "compu",
+    "ancho": 1366,
+    "scrollWidth": 1366,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "panel-evento",
+    "vista": "compu",
+    "ancho": 1366,
+    "scrollWidth": 1366,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "panel-trivia",
+    "vista": "compu",
+    "ancho": 1366,
+    "scrollWidth": 1366,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "panel-trivia-envivo",
+    "vista": "compu",
+    "ancho": 1366,
+    "scrollWidth": 1366,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "panel-trivia-resultado",
+    "vista": "compu",
+    "ancho": 1366,
+    "scrollWidth": 1366,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "panel-trivia-fin",
+    "vista": "compu",
+    "ancho": 1366,
+    "scrollWidth": 1366,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "panel-tarjetas",
+    "vista": "compu",
+    "ancho": 1366,
+    "scrollWidth": 1366,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "pantalla-bienvenida",
+    "vista": "tv",
+    "ancho": 1920,
+    "scrollWidth": 1920,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "pantalla-fotos",
+    "vista": "tv",
+    "ancho": 1920,
+    "scrollWidth": 1920,
+    "fuera": [
+      "div.pantalla-fondo (-40→1960)"
+    ],
+    "errores": []
+  },
+  {
+    "pagina": "pantalla-trivia-pregunta",
+    "vista": "tv",
+    "ancho": 1920,
+    "scrollWidth": 1920,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "pantalla-trivia-resultado",
+    "vista": "tv",
+    "ancho": 1920,
+    "scrollWidth": 1920,
+    "fuera": [],
+    "errores": []
+  },
+  {
+    "pagina": "pantalla-trivia-fin",
+    "vista": "tv",
+    "ancho": 1920,
+    "scrollWidth": 1920,
+    "fuera": [],
+    "errores": []
+  }
+]
