@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { supabase } from './supabase';
+import { supabase, supabasePantalla } from './supabase';
 
 export type FaseTrivia = 'espera' | 'pregunta' | 'resultado' | 'ranking' | 'fin';
 
@@ -105,7 +105,7 @@ export function useTriviaPantalla(token: string | undefined) {
     if (!token) return;
     let activo = true;
     const consultar = async () => {
-      const { data, error } = await supabase.rpc('trivia_pantalla', { p_token: token });
+      const { data, error } = await supabasePantalla.rpc('trivia_pantalla', { p_token: token });
       if (activo && !error) setEstado((data as EstadoTrivia | null) ?? null);
     };
     void consultar();

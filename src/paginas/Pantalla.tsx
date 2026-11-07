@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useParams } from 'react-router-dom';
 import QRCode from 'qrcode';
-import { supabase, urlPublica } from '../lib/supabase';
+import { supabasePantalla as supabase, urlPublica } from '../lib/supabase';
 import { colorValido } from '../lib/colores';
 import { formatearFecha, linkInvitados, separarNombres } from '../lib/formato';
 import { useTriviaPantalla } from '../lib/trivia';
@@ -12,6 +12,13 @@ type EventoPantalla = { id: string; slug: string; titulo: string; fecha: string 
 type FotoPantalla = { id: string; key_original: string; key_thumb: string; autor_nombre: string; created_at: string };
 
 const CONSULTA_CADA_MS = 3000;
+
+/** Corta un pedido colgado (con navegadores viejos que no lo permiten, simplemente no corta). */
+function limiteDeTiempo(ms: number): AbortSignal {
+  const control = new AbortController();
+  setTimeout(() => control.abort(), ms);
+  return control.signal;
+}
 const RECARGA_COMPLETA_MS = 60_000; // rearma la lista entera (por ejemplo, fotos que se vuelven a mostrar)
 
 export default function Pantalla() {
@@ -21,6 +28,7 @@ export default function Pantalla() {
   const [actual, setActual] = useState<FotoPantalla | null>(null);
   const [total, setTotal] = useState(0);
   const [cursorQuieto, setCursorQuieto] = useState(false);
+  const [sinConexion, setSinConexion] = useState(false);
   const trivia = useTriviaPantalla(token);
 
   const todas = useRef<FotoPantalla[]>([]);
@@ -34,17 +42,30 @@ export default function Pantalla() {
   // Datos del evento y QR. Se vuelven a consultar para aplicar cambios de estilo sin recargar.
   useEffect(() => {
     let activo = true;
+    let t: number | undefined;
+    let cargado = false;
     const traerEvento = async () => {
-      const { data, error } = await supabase.rpc('pantalla_evento', { p_token: token });
-      if (!activo || error) return;
-      const ev = (data as EventoPantalla[] | null)?.[0] ?? null;
-      setEvento((prev) => (JSON.stringify(prev) === JSON.stringify(ev) ? prev : ev));
+      // Si la señal falla, se reintenta enseguida (cada 3 s) hasta cargar; después, cada 30 s.
+      try {
+        const { data, error } = await supabase.rpc('pantalla_evento', { p_token: token }).abortSignal(limiteDeTiempo(15_000));
+        if (!activo) return;
+        if (!error) {
+          cargado = true;
+          setSinConexion(false);
+          const ev = (data as EventoPantalla[] | null)?.[0] ?? null;
+          setEvento((prev) => (JSON.stringify(prev) === JSON.stringify(ev) ? prev : ev));
+        } else if (!cargado) {
+          setSinConexion(true);
+        }
+      } catch {
+        if (activo && !cargado) setSinConexion(true);
+      }
+      if (activo) t = window.setTimeout(traerEvento, cargado ? 30_000 : 3_000);
     };
     void traerEvento();
-    const t = setInterval(traerEvento, 30_000);
     return () => {
       activo = false;
-      clearInterval(t);
+      clearTimeout(t);
     };
   }, [token]);
 
@@ -180,7 +201,13 @@ export default function Pantalla() {
     };
   }, []);
 
-  if (evento === undefined) return <div className="pantalla" aria-busy="true" />;
+  if (evento === undefined) {
+    return (
+      <main className="pantalla pantalla-mensaje" aria-busy="true">
+        <p>{sinConexion ? 'Sin conexión con la galería. Reintentando…' : 'Conectando con la galería…'}</p>
+      </main>
+    );
+  }
   if (evento === null) {
     return (
       <main className="pantalla pantalla-mensaje">
