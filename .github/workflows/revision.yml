@@ -1,0 +1,35 @@
+name: Revisión responsive
+
+# Compila y saca capturas de todas las páginas (con datos simulados) en celular, tablet, compu y TV.
+on:
+  push:
+    branches: [revision-responsive]
+
+permissions:
+  contents: write
+
+jobs:
+  capturas:
+    runs-on: ubuntu-latest
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      VITE_R2_PUBLIC_URL: ${{ secrets.VITE_R2_PUBLIC_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-audit --no-fund && npm run build
+      - run: npx --yes playwright@1.48.2 install --with-deps chromium
+      - run: |
+          npm install --no-save --no-audit --no-fund playwright@1.48.2
+          node scripts/capturas-simuladas.mjs
+      - run: |
+          cd capturas
+          git init -q
+          git config user.name "Gabriel Calisaya"
+          git config user.email "gabrielcalisaya.it@gmail.com"
+          git add -A
+          git commit -q -m "Capturas de ${GITHUB_SHA::7}"
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" HEAD:capturas-revision
