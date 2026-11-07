@@ -157,7 +157,11 @@ for (const [nombreVista, vista] of VISTAS) {
       const url = new URL(req.url());
       if (url.pathname.includes('sim-foto-')) {
         const [, id, w] = url.pathname.match(/sim-foto-(photo-[\w-]+)-(\d+)$/) ?? [];
-        return route.fulfill({ response: await route.fetch({ url: `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${w}&q=60` }) });
+        try {
+          return await route.fulfill({ response: await route.fetch({ url: `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${w}&q=60` }) });
+        } catch {
+          return route.abort().catch(() => {});
+        }
       }
       if (url.host === SUPA.host) {
         if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' } });
@@ -188,6 +192,7 @@ for (const [nombreVista, vista] of VISTAS) {
     });
     await pagina.screenshot({ path: `capturas/${esc.n}--${nombreVista}.jpg`, fullPage: !esc.pantalla, type: 'jpeg', quality: 65 });
     informe.push({ pagina: esc.n, vista: nombreVista, ancho: vista.width, ...desbordes, errores: errores.slice(0, 3) });
+    await contexto.unrouteAll({ behavior: 'ignoreErrors' });
     await contexto.close();
   }
 }
