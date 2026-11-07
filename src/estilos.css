@@ -5179,3 +5179,235 @@ button.idea:hover {
 .pedido-fila strong { overflow-wrap: anywhere; }
 .pedido-fila small { color: var(--suave); }
 .pedido-total { flex: 0 0 auto; font-weight: 700; color: var(--ciruela); }
+
+/* ═════════ Ajustes responsive (celular, tablet y celular horizontal) ═════════ */
+
+/* Resultados de la trivia: las columnas no pueden crecer más que la pantalla
+   (los nombres largos con "…" empujaban todo hacia la derecha). */
+.resultados {
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+}
+.resultados > *,
+.resultado-texto,
+.acierto-nombre {
+  min-width: 0;
+}
+.resultado-texto {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 700px) {
+  .resultados {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.trivia-tarjeta .resultados {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* Tarjetas de mesa: en la vista previa del celular el texto se achica en vez de cortarse ("Gabri el"). */
+@media screen and (max-width: 860px) {
+  .hoja {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .tarjeta-mesa {
+    min-width: 0;
+    padding: 2.5vw;
+  }
+  .tarjeta-mesa-nombres {
+    font-size: clamp(14px, 5.4vw, 24pt);
+    overflow-wrap: normal;
+  }
+}
+
+/* ───── Pantalla del salón en pantallas angostas o verticales (celular, tablet parada) ───── */
+@media (orientation: portrait), (max-width: 760px) {
+  .pantalla-qr {
+    left: 50%;
+    right: auto;
+    bottom: 3vh;
+    transform: translateX(-50%);
+    width: max-content;
+    max-width: calc(100vw - 32px);
+    padding: 12px 18px 12px 12px;
+  }
+  .pantalla-qr img {
+    width: clamp(96px, 26vw, 170px);
+  }
+  /* El contenido deja libre la franja de abajo donde va el QR */
+  .pantalla-bienvenida {
+    bottom: calc(clamp(96px, 26vw, 170px) + 3vh + 40px);
+    padding: 8vh 6vw 2vh;
+  }
+  .pantalla-titulo {
+    font-size: clamp(3rem, 17vw, 8rem);
+  }
+  .pantalla-fecha {
+    font-size: clamp(0.8rem, 3.4vw, 1.1rem);
+    letter-spacing: 0.18em;
+  }
+  .pantalla-invitacion {
+    font-size: clamp(1.1rem, 4.6vw, 2rem);
+  }
+  .pantalla-escena {
+    padding: 8vh 4vw calc(clamp(96px, 26vw, 170px) + 3vh + 40px);
+  }
+  .pantalla-foto {
+    max-width: 100%;
+    max-height: calc(100vh - 8vh - clamp(96px, 26vw, 170px) - 3vh - 40px);
+  }
+  .pantalla-autor {
+    top: 18px;
+    bottom: auto;
+    left: 18px;
+    padding: 8px 16px;
+    font-size: clamp(1rem, 4vw, 1.6rem);
+  }
+
+  /* Trivia en la pantalla: una columna y tamaños según el ancho */
+  .tv-trivia {
+    justify-content: safe center;
+    overflow-y: auto;
+    padding: 9vh 6vw 4vh;
+  }
+  .tv-cabecera {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .reloj-anillo.tv {
+    width: clamp(64px, 18vw, 140px);
+    height: clamp(64px, 18vw, 140px);
+  }
+  .reloj-anillo.tv span {
+    font-size: clamp(1.6rem, 8vw, 4rem);
+  }
+  .tv-pregunta,
+  .tv-titulo {
+    margin: 2.5vh 0 3vh;
+    font-size: clamp(2rem, 9vw, 4.5rem);
+  }
+  .tv-pregunta.chica {
+    font-size: clamp(1.6rem, 7vw, 3.4rem);
+  }
+  .tv-opciones {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .tv-opcion {
+    min-height: 0;
+    padding: 10px 20px 10px 10px;
+    border-radius: 999px;
+    font-size: clamp(1.1rem, 4.6vw, 2.2rem);
+  }
+  .tv-opcion .tv-letra {
+    flex: none;
+    width: clamp(40px, 11vw, 72px);
+    height: clamp(40px, 11vw, 72px);
+    font-size: clamp(1rem, 4.4vw, 1.8rem);
+  }
+  .resultados-pantalla {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+  .resultados-pantalla .resultado-fila {
+    min-height: 0;
+    padding: 8px 16px 8px 8px;
+    font-size: clamp(1rem, 4.2vw, 1.9rem);
+  }
+  .resultados-pantalla .resultado-letra {
+    width: clamp(36px, 10vw, 60px);
+    height: clamp(36px, 10vw, 60px);
+  }
+  .resultados-pantalla .aciertos-lista li {
+    padding: 8px 14px;
+    font-size: clamp(0.95rem, 3.8vw, 1.6rem);
+  }
+  .resultados-pantalla .resultados-aciertos {
+    padding: 16px;
+  }
+  .resultados-pantalla .resultados-resumen {
+    font-size: clamp(1rem, 4.2vw, 1.8rem);
+  }
+  /* Top 10: una sola columna, filas más bajas */
+  .tv-ranking,
+  .tv-ranking.diez {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: none;
+  }
+  .tv-ranking li,
+  .tv-ranking.diez li {
+    gap: 14px;
+    padding: 6px 18px 6px 6px;
+    font-size: clamp(0.95rem, 4.2vw, 1.9rem);
+  }
+  .tv-ranking-pos {
+    flex: none;
+    width: clamp(30px, 8.5vw, 56px);
+    height: clamp(30px, 8.5vw, 56px);
+  }
+  .tv-ranking-nombre {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .tv-sub {
+    margin-top: 2.5vh;
+    font-size: clamp(1rem, 4vw, 1.8rem);
+  }
+}
+
+/* ───── Pantalla del salón en celular acostado (poca altura) ───── */
+@media (orientation: landscape) and (max-height: 520px) {
+  .pantalla-qr {
+    right: 12px;
+    bottom: 12px;
+    gap: 10px;
+    padding: 8px 12px 8px 8px;
+    border-radius: 16px;
+  }
+  .pantalla-qr img {
+    width: 84px;
+  }
+  .pantalla-qr strong {
+    font-size: 1.1rem;
+  }
+  .pantalla-qr span {
+    font-size: 0.75rem;
+  }
+  .pantalla-qr div {
+    max-width: 130px;
+  }
+  .pantalla-bienvenida {
+    right: 240px;
+    padding: 3vh 4vw;
+  }
+  .pantalla-titulo {
+    font-size: clamp(2.2rem, 16vh, 5rem);
+  }
+  .pantalla-autor {
+    left: 12px;
+    bottom: 12px;
+    padding: 6px 14px;
+    font-size: 1rem;
+  }
+  .tv-trivia {
+    justify-content: safe center;
+    overflow-y: auto;
+    padding: 4vh 5vw;
+  }
+  .tv-pregunta,
+  .tv-titulo {
+    margin: 1.5vh 0 2.5vh;
+  }
+  .tv-opcion {
+    min-height: 0;
+  }
+  .tv-ranking.diez li {
+    padding: 3px 12px 3px 3px;
+  }
+  .tv-sub {
+    margin-top: 2vh;
+  }
+}
