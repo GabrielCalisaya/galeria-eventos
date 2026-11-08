@@ -1,0 +1,24 @@
+name: Diagnóstico
+on:
+  push:
+    branches: [diagnostico]
+jobs:
+  probar:
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          URL: ${{ secrets.VITE_SUPABASE_URL }}
+          KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          R2: ${{ secrets.VITE_R2_PUBLIC_URL }}
+        run: |
+          echo "== SITIO"
+          curl -sS -o /tmp/s -D /tmp/h -w "status=%{http_code} tiempo=%{time_total}s ip=%{remote_ip}\n" https://fotos.newtech.net.ar/ ; head -5 /tmp/h; head -c 400 /tmp/s; echo
+          JS=$(grep -o 'assets/index-[^"]*\.js' /tmp/s | head -1); echo "js=$JS"
+          [ -n "$JS" ] && curl -sS -o /dev/null -w "js status=%{http_code} bytes=%{size_download}\n" "https://fotos.newtech.net.ar/$JS"
+          curl -sS -o /dev/null -w "ruta /e/x status=%{http_code}\n" https://fotos.newtech.net.ar/e/prueba
+          echo "== DNS"; getent hosts fotos.newtech.net.ar newtech.net.ar
+          echo "== SUPABASE"
+          curl -sS -o /tmp/r -w "rest status=%{http_code} tiempo=%{time_total}s\n" -X POST "$URL/rest/v1/rpc/pantalla_evento" -H "apikey: $KEY" -H "Content-Type: application/json" -d '{"p_token":"x"}'; head -c 300 /tmp/r; echo
+          curl -sS -o /tmp/r -w "auth status=%{http_code}\n" "$URL/auth/v1/health" -H "apikey: $KEY"; head -c 200 /tmp/r; echo
+          curl -sS -o /tmp/r -w "funciones status=%{http_code}\n" -X OPTIONS "$URL/functions/v1/sign-upload"; echo
+          echo "== R2"; curl -sS -o /dev/null -w "r2 status=%{http_code}\n" "$R2/"
